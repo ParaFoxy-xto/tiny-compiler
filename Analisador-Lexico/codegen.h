@@ -7,5 +7,7 @@ void gen_neg();
 void gen_op(const char* op);
 void gen_num(int value);
 void gen_id(int address);
+void gen_relop(const char* op);
+void gen_if();
 
 #endif 
