@@ -23,6 +23,14 @@ whitespace [ \t]+
 "<>"  { yylval.sval = strdup(yytext); return NEQ; }
 "&&"  { yylval.sval = strdup(yytext); return AND_OP; }
 "||"  { yylval.sval = strdup(yytext); return OR_OP; }
+"+"       { return '+'; }
+"-"       { return '-'; }
+"*"       { return '*'; }
+"/"       { return '/'; }
+"^"       { return '^'; }
+"("       { return '('; }
+")"       { return ')'; }
+";"       { return ';'; } /* For statement termination */
 do        {return DO;}
 else      {return ELSE;}
 end       {return END;}
@@ -40,8 +48,9 @@ write     {return WRITE;}
 {number}     { yylval.ival = atoi(yytext); return NUM; } /* Good practice to use atoi */ 
 {id}         { yylval.sval = strdup(yytext); return IDENTIFIER; }
 {whitespace} { ; }
+\r            { ; } /* Ignore carriage returns */
 \n           { yylineno++; }
-.            { return yytext[0]; }
+.            { fprintf(stderr, "Lexical Error (linha %d): Caractere inesperado '%s'\n", yylineno, yytext); }
 %%
 int yywrap() {
   return 1;

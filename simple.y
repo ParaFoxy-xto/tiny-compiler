@@ -23,6 +23,8 @@ int result = 0;
 %token <sval> LT GT EQ NEQ /* Relational Operators: < > = <> */
 %token <sval> AND_OP OR_OP  /* Boolean Operators: && || */
 %type <tipo> expression
+%type <tipo> condition
+%type <tipo> condition_statement
 %type <sval> IDENTIFIER
 %type <ival> NUM
 %type <sval> relop
@@ -46,7 +48,7 @@ decls:
 ;
 
 decl:
-    INTEGER IDENTIFIER { 
+    INTEGER IDENTIFIER ';' { 
         semantic_declare_var($2, yylineno);
     }
 ;
@@ -68,26 +70,48 @@ condition:
 	/* Placeholder for semantic check and code generation */
         if ($1 != TYPE_INT || $3 != TYPE_INT) {
              printf("Erro semântico (linha %d): Operadores de condição requerem inteiros.\n", yylineno);
-        }
-        /* gen_relop($2); */
-        printf("## Parsed Condition: %s\n", $2);
+	     semantic_set_error();
+        } else {
+	     gen_relop($2); /* Generate code for the comparison */
+             $$ = TYPE_INT; /* The result is an INTEGER (0 for false, 1 for true) */
+             printf("## Parsed Condition: %s\n", $2);
+	}
     }
 ;
 
 condition_statement:
       condition
-    | condition_statement AND_OP condition  { /* gen_op("AND"); */ }
-    | condition_statement OR_OP condition   { /* gen_op("OR"); */ }
+    | condition_statement AND_OP condition {
+        if ($1 != TYPE_INT || $3 != TYPE_INT) { /* Check for INTEGER operands */
+            printf("Erro semântico (linha %d): Operador '&&' requer operandos inteiros/booleanos.\n", yylineno);
+            semantic_set_error();
+            $$ = TYPE_VOID;
+        } else {
+            gen_op("AND");
+            $$ = TYPE_INT; /* The result is an INTEGER */
+        }
+    }
+    | condition_statement OR_OP condition {
+        if ($1 != TYPE_INT || $3 != TYPE_INT) { /* Check for INTEGER operands */
+            printf("Erro semântico (linha %d): Operador '||' requer operandos inteiros/booleanos.\n", yylineno);
+            semantic_set_error();
+            $$ = TYPE_VOID;
+        } else {
+            gen_op("OR");
+            $$ = TYPE_INT;
+        }
+    }
 ;
 
 stmt:
-    IDENTIFIER ASSGNOP expression {
+    IDENTIFIER ASSGNOP expression ';' {
         if (semantic_check_var($1, yylineno)) {
             int idx = find_symbol($1);
             gen_assign(symbol_table[idx].address);
         }
     }
-  | WHILE condition_statement DO stmts END { gen_while(); }
+  | WHILE condition_statement DO stmts END ';' { gen_while(); }
+  | IF condition_statement THEN stmts END ';' { gen_if(); } /* <-- ADD IF STATEMENT RULE */
 ;
 
 /* Expressoes aceitas */
