@@ -6,17 +6,23 @@
 digit [0-9]
 number ([-+]?[1-9]{digit}*)|{digit}
 id	[a-z][a-z0-9]*
-whitespace [ \t\n]+
+whitespace [ \t]+
 
 %x comment
 
 %%
 "/*"          {BEGIN(comment);}
 <comment>"*/" {BEGIN(INITIAL);}
-<comment>\n   {}
+<comment>\n   {yylineno++;}
 <comment>.    {}
 
 ":="      {return ASSGNOP;}
+"<"   { yylval.sval = strdup(yytext); return LT; }
+">"   { yylval.sval = strdup(yytext); return GT; }
+"="   { yylval.sval = strdup(yytext); return EQ; }
+"<>"  { yylval.sval = strdup(yytext); return NEQ; }
+"&&"  { yylval.sval = strdup(yytext); return AND_OP; }
+"||"  { yylval.sval = strdup(yytext); return OR_OP; }
 do        {return DO;}
 else      {return ELSE;}
 end       {return END;}
@@ -31,11 +37,11 @@ then      {return THEN;}
 while     {return WHILE;}
 write     {return WRITE;}
 
-{number}          {return NUM;}
-{id}              { yylval.sval = strdup(yytext); return IDENTIFIER; }
-{whitespace}      {;}
-\n        { yylineno++; return '\n'; }
-.         { return yytext[0]; }
+{number}     { yylval.ival = atoi(yytext); return NUM; } /* Good practice to use atoi */ 
+{id}         { yylval.sval = strdup(yytext); return IDENTIFIER; }
+{whitespace} { ; }
+\n           { yylineno++; }
+.            { return yytext[0]; }
 %%
 int yywrap() {
   return 1;
