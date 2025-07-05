@@ -70,7 +70,13 @@ extern int yydebug;
     SKIP = 271,                    /* SKIP  */
     THEN = 272,                    /* THEN  */
     WRITE = 273,                   /* WRITE  */
-    NEG = 274                      /* NEG  */
+    LT = 274,                      /* LT  */
+    GT = 275,                      /* GT  */
+    EQ = 276,                      /* EQ  */
+    NEQ = 277,                     /* NEQ  */
+    AND_OP = 278,                  /* AND_OP  */
+    OR_OP = 279,                   /* OR_OP  */
+    NEG = 280                      /* NEG  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -85,7 +91,7 @@ union YYSTYPE
     char* sval;    // Para IDENTIFIER
     int tipo;      // Para tipo de expressão
 
-#line 89 "simple.tab.h"
+#line 95 "simple.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

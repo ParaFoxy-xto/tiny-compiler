@@ -20,9 +20,12 @@ int result = 0;
 }
 
 %token NUM IDENTIFIER INTEGER ASSGNOP WHILE DO END ELSE FI IF IN LET READ SKIP THEN WRITE
+%token <sval> LT GT EQ NEQ /* Relational Operators: < > = <> */
+%token <sval> AND_OP OR_OP  /* Boolean Operators: && || */
 %type <tipo> expression
 %type <sval> IDENTIFIER
 %type <ival> NUM
+%type <sval> relop
 %left '-' '+' 
 %left '*' '/' 
 %right '^'
@@ -53,6 +56,30 @@ stmts:
   | stmts stmt
 ;
 
+relop:
+      LT   { $$ = $1; }
+    | GT   { $$ = $1; }
+    | EQ   { $$ = $1; }
+    | NEQ  { $$ = $1; }
+;
+
+condition:
+    expression relop expression {
+	/* Placeholder for semantic check and code generation */
+        if ($1 != TYPE_INT || $3 != TYPE_INT) {
+             printf("Erro semântico (linha %d): Operadores de condição requerem inteiros.\n", yylineno);
+        }
+        /* gen_relop($2); */
+        printf("## Parsed Condition: %s\n", $2);
+    }
+;
+
+condition_statement:
+      condition
+    | condition_statement AND_OP condition  { /* gen_op("AND"); */ }
+    | condition_statement OR_OP condition   { /* gen_op("OR"); */ }
+;
+
 stmt:
     IDENTIFIER ASSGNOP expression {
         if (semantic_check_var($1, yylineno)) {
@@ -60,7 +87,7 @@ stmt:
             gen_assign(symbol_table[idx].address);
         }
     }
-  | WHILE expression DO stmts END { gen_while(); }
+  | WHILE condition_statement DO stmts END { gen_while(); }
 ;
 
 /* Expressoes aceitas */
