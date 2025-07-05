@@ -1,0 +1,2 @@
+integer x
+y := x + 1 

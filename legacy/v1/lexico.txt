@@ -1,0 +1,4 @@
+ANALISADOR LÉXICO
+* Observação: usa compilador para C e o Flex.
+  1. Para criar "lex.yy.c", vá ao diretório onde o arquivo ".l" está na linha de comando e use o comando: "flex arquivo.l";
+  2. Compilar "lex.yy.c" (por exemplo: "gcc -Wall lex.yy.c -o lexico_v1").
