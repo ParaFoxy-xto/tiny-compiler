@@ -103,6 +103,11 @@ condition_statement:
     }
 ;
 
+/* Add these new empty rules that act as triggers for codegen */
+M_start_loop: %empty { gen_loop_start(); } ;
+M_after_condition: %empty { gen_after_condition(); } ;
+M_end_loop: %empty { gen_loop_end(); } ;
+
 stmt:
     IDENTIFIER ASSGNOP expression ';' {
         if (semantic_check_var($1, yylineno)) {
@@ -110,7 +115,7 @@ stmt:
             gen_assign(symbol_table[idx].address);
         }
     }
-  | WHILE condition_statement DO stmts END ';' { gen_while(); }
+  | WHILE M_start_loop condition_statement DO M_after_condition stmts END M_end_loop ';' { }
   | IF condition_statement THEN stmts END ';' { gen_if(); } /* <-- ADD IF STATEMENT RULE */
 ;
 
@@ -199,7 +204,10 @@ int main(int argc, char **argv)
     } else {
         yyin = stdin;
     }
+    
+    codegen_init("output.tm");
     semantic_init();
+
     if (yyparse() == 0 && result == 0 && !semantic_had_error()) 
     {
         printf("\nSintatico e semantico OK\n");
@@ -207,6 +215,9 @@ int main(int argc, char **argv)
     {
         printf("\nErro sintatico ou semantico.\n");
     }
+
+    codegen_finalize();
+
     if (yyin != stdin) fclose(yyin);
     return result;
 }

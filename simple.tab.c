@@ -150,8 +150,11 @@ enum yysymbol_kind_t
   YYSYMBOL_relop = 39,                     /* relop  */
   YYSYMBOL_condition = 40,                 /* condition  */
   YYSYMBOL_condition_statement = 41,       /* condition_statement  */
-  YYSYMBOL_stmt = 42,                      /* stmt  */
-  YYSYMBOL_expression = 43                 /* expression  */
+  YYSYMBOL_M_start_loop = 42,              /* M_start_loop  */
+  YYSYMBOL_M_after_condition = 43,         /* M_after_condition  */
+  YYSYMBOL_M_end_loop = 44,                /* M_end_loop  */
+  YYSYMBOL_stmt = 45,                      /* stmt  */
+  YYSYMBOL_expression = 46                 /* expression  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -479,16 +482,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  3
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   70
+#define YYLAST   65
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  34
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  10
+#define YYNNTS  13
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  26
+#define YYNRULES  29
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  53
+#define YYNSTATES  56
 
 /* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   280
@@ -541,8 +544,8 @@ static const yytype_int8 yytranslate[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    42,    42,    45,    47,    51,    56,    58,    62,    63,
-      64,    65,    69,    83,    84,    94,   107,   113,   114,   119,
-     120,   130,   140,   150,   160,   170,   171
+      64,    65,    69,    83,    84,    94,   107,   108,   109,   112,
+     118,   119,   124,   125,   135,   145,   155,   165,   175,   176
 };
 #endif
 
@@ -563,7 +566,8 @@ static const char *const yytname[] =
   "LET", "READ", "SKIP", "THEN", "WRITE", "LT", "GT", "EQ", "NEQ",
   "AND_OP", "OR_OP", "'-'", "'+'", "'*'", "'/'", "'^'", "NEG", "';'",
   "'('", "')'", "$accept", "program", "decls", "decl", "stmts", "relop",
-  "condition", "condition_statement", "stmt", "expression", YY_NULLPTR
+  "condition", "condition_statement", "M_start_loop", "M_after_condition",
+  "M_end_loop", "stmt", "expression", YY_NULLPTR
 };
 
 static const char *
@@ -573,7 +577,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-23)
+#define YYPACT_NINF (-22)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -587,12 +591,12 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-     -23,    16,    15,   -23,    17,   -23,    43,     3,    22,    -3,
-      -3,   -23,   -23,    -3,   -23,   -23,    -3,    -3,   -23,    -6,
-      11,    34,    35,   -23,   -14,   -23,    -3,    -3,   -23,   -23,
-     -23,   -23,    -3,    -3,    -3,    -3,    -3,   -23,   -23,   -23,
-      36,   -23,   -23,   -18,   -18,   -23,   -23,    42,    37,     4,
-      21,   -23,   -23
+     -22,     4,     1,   -22,     6,   -22,    43,    25,    56,   -22,
+      -3,   -22,   -22,    -3,    -3,   -22,   -22,    -3,    -3,   -22,
+      -8,    11,    26,    -6,   -22,   -14,   -22,    -3,    -3,   -22,
+     -22,   -22,   -22,    -3,    -3,    -3,    -3,    -3,   -22,   -22,
+     -22,    36,   -22,   -22,    -7,    -7,   -22,   -22,    33,   -22,
+      32,    37,   -22,   -22,    34,   -22
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -600,24 +604,26 @@ static const yytype_int8 yypact[] =
    means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       3,     0,     6,     1,     0,     4,     2,     0,     0,     0,
-       0,     7,     5,     0,    25,    26,     0,     0,    13,     0,
-       0,     0,     0,    20,     0,     6,     0,     0,     8,     9,
-      10,    11,     0,     0,     0,     0,     0,     6,    16,    19,
-       0,    14,    15,    22,    21,    23,    24,    12,     0,     0,
-       0,    17,    18
+       3,     0,     6,     1,     0,     4,     2,     0,     0,    16,
+       0,     7,     5,     0,     0,    28,    29,     0,     0,    13,
+       0,     0,     0,     0,    23,     0,     6,     0,     0,     8,
+       9,    10,    11,     0,     0,     0,     0,     0,    19,    17,
+      22,     0,    14,    15,    25,    24,    26,    27,    12,     6,
+       0,     0,    21,    18,     0,    20
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -23,   -23,   -23,   -23,   -22,   -23,   -21,    32,   -23,    -9
+     -22,   -22,   -22,   -22,   -21,   -22,     7,    28,   -22,   -22,
+     -22,   -22,   -10
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,     1,     2,     5,     6,    36,    18,    19,    11,    20
+       0,     1,     2,     5,     6,    37,    19,    20,    14,    49,
+      54,    11,    21
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -625,26 +631,24 @@ static const yytype_int8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      14,    15,    25,    40,    22,    41,    42,    23,    24,    34,
-      35,    32,    33,    34,    35,    48,     3,    26,    27,    39,
-       4,     7,    16,    43,    44,    45,    46,    47,    13,    17,
-      28,    29,    30,    31,    12,    51,    32,    33,    34,    35,
-       8,     8,    21,     9,     9,    49,    50,     8,    10,    10,
-       9,    37,    52,     0,     0,    10,     0,    26,    27,     0,
-      32,    33,    34,    35,     0,     0,    38,    32,    33,    34,
-      35
+      15,    16,    39,    22,     3,    41,     4,    24,    25,    26,
+       7,    33,    34,    35,    36,    27,    28,    27,    28,    40,
+      35,    36,    17,    44,    45,    46,    47,    48,    51,    18,
+      29,    30,    31,    32,    42,    43,    33,    34,    35,    36,
+       8,     8,    23,     9,     9,    50,    53,     8,    10,    10,
+       9,    33,    34,    35,    36,    10,    12,    38,    33,    34,
+      35,    36,    13,    52,     0,    55
 };
 
 static const yytype_int8 yycheck[] =
 {
-       3,     4,     8,    25,    13,    26,    27,    16,    17,    27,
-      28,    25,    26,    27,    28,    37,     0,    23,    24,    33,
-       5,     4,    25,    32,    33,    34,    35,    36,     6,    32,
-      19,    20,    21,    22,    31,    31,    25,    26,    27,    28,
-       4,     4,    10,     7,     7,     9,     9,     4,    12,    12,
-       7,    17,    31,    -1,    -1,    12,    -1,    23,    24,    -1,
-      25,    26,    27,    28,    -1,    -1,    31,    25,    26,    27,
-      28
+       3,     4,     8,    13,     0,    26,     5,    17,    18,    17,
+       4,    25,    26,    27,    28,    23,    24,    23,    24,    33,
+      27,    28,    25,    33,    34,    35,    36,    37,    49,    32,
+      19,    20,    21,    22,    27,    28,    25,    26,    27,    28,
+       4,     4,    14,     7,     7,     9,     9,     4,    12,    12,
+       7,    25,    26,    27,    28,    12,    31,    31,    25,    26,
+      27,    28,     6,    31,    -1,    31
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
@@ -652,27 +656,27 @@ static const yytype_int8 yycheck[] =
 static const yytype_int8 yystos[] =
 {
        0,    35,    36,     0,     5,    37,    38,     4,     4,     7,
-      12,    42,    31,     6,     3,     4,    25,    32,    40,    41,
-      43,    41,    43,    43,    43,     8,    23,    24,    19,    20,
-      21,    22,    25,    26,    27,    28,    39,    17,    31,    33,
-      38,    40,    40,    43,    43,    43,    43,    43,    38,     9,
-       9,    31,    31
+      12,    45,    31,     6,    42,     3,     4,    25,    32,    40,
+      41,    46,    46,    41,    46,    46,    17,    23,    24,    19,
+      20,    21,    22,    25,    26,    27,    28,    39,    31,     8,
+      33,    38,    40,    40,    46,    46,    46,    46,    46,    43,
+       9,    38,    31,     9,    44,    31
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
        0,    34,    35,    36,    36,    37,    38,    38,    39,    39,
-      39,    39,    40,    41,    41,    41,    42,    42,    42,    43,
-      43,    43,    43,    43,    43,    43,    43
+      39,    39,    40,    41,    41,    41,    42,    43,    44,    45,
+      45,    45,    46,    46,    46,    46,    46,    46,    46,    46
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     2,     0,     2,     3,     0,     2,     1,     1,
-       1,     1,     3,     1,     3,     3,     4,     6,     6,     3,
-       2,     3,     3,     3,     3,     1,     1
+       1,     1,     3,     1,     3,     3,     0,     0,     0,     4,
+       9,     6,     3,     2,     3,     3,     3,     3,     1,     1
 };
 
 
@@ -1138,7 +1142,7 @@ yyreduce:
   case 2: /* program: decls stmts  */
 #line 42 "simple.y"
                 { semantic_print_table(); }
-#line 1142 "simple.tab.c"
+#line 1146 "simple.tab.c"
     break;
 
   case 5: /* decl: INTEGER IDENTIFIER ';'  */
@@ -1146,31 +1150,31 @@ yyreduce:
                            { 
         semantic_declare_var((yyvsp[-1].sval), yylineno);
     }
-#line 1150 "simple.tab.c"
+#line 1154 "simple.tab.c"
     break;
 
   case 8: /* relop: LT  */
 #line 62 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1156 "simple.tab.c"
+#line 1160 "simple.tab.c"
     break;
 
   case 9: /* relop: GT  */
 #line 63 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1162 "simple.tab.c"
+#line 1166 "simple.tab.c"
     break;
 
   case 10: /* relop: EQ  */
 #line 64 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1168 "simple.tab.c"
+#line 1172 "simple.tab.c"
     break;
 
   case 11: /* relop: NEQ  */
 #line 65 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1174 "simple.tab.c"
+#line 1178 "simple.tab.c"
     break;
 
   case 12: /* condition: expression relop expression  */
@@ -1186,7 +1190,7 @@ yyreduce:
              printf("## Parsed Condition: %s\n", (yyvsp[-1].sval));
 	}
     }
-#line 1190 "simple.tab.c"
+#line 1194 "simple.tab.c"
     break;
 
   case 14: /* condition_statement: condition_statement AND_OP condition  */
@@ -1201,7 +1205,7 @@ yyreduce:
             (yyval.tipo) = TYPE_INT; /* The result is an INTEGER */
         }
     }
-#line 1205 "simple.tab.c"
+#line 1209 "simple.tab.c"
     break;
 
   case 15: /* condition_statement: condition_statement OR_OP condition  */
@@ -1216,40 +1220,58 @@ yyreduce:
             (yyval.tipo) = TYPE_INT;
         }
     }
-#line 1220 "simple.tab.c"
+#line 1224 "simple.tab.c"
     break;
 
-  case 16: /* stmt: IDENTIFIER ASSGNOP expression ';'  */
+  case 16: /* M_start_loop: %empty  */
 #line 107 "simple.y"
+                     { gen_loop_start(); }
+#line 1230 "simple.tab.c"
+    break;
+
+  case 17: /* M_after_condition: %empty  */
+#line 108 "simple.y"
+                          { gen_after_condition(); }
+#line 1236 "simple.tab.c"
+    break;
+
+  case 18: /* M_end_loop: %empty  */
+#line 109 "simple.y"
+                   { gen_loop_end(); }
+#line 1242 "simple.tab.c"
+    break;
+
+  case 19: /* stmt: IDENTIFIER ASSGNOP expression ';'  */
+#line 112 "simple.y"
                                       {
         if (semantic_check_var((yyvsp[-3].sval), yylineno)) {
             int idx = find_symbol((yyvsp[-3].sval));
             gen_assign(symbol_table[idx].address);
         }
     }
-#line 1231 "simple.tab.c"
+#line 1253 "simple.tab.c"
     break;
 
-  case 17: /* stmt: WHILE condition_statement DO stmts END ';'  */
-#line 113 "simple.y"
-                                               { gen_while(); }
-#line 1237 "simple.tab.c"
+  case 20: /* stmt: WHILE M_start_loop condition_statement DO M_after_condition stmts END M_end_loop ';'  */
+#line 118 "simple.y"
+                                                                                         { }
+#line 1259 "simple.tab.c"
     break;
 
-  case 18: /* stmt: IF condition_statement THEN stmts END ';'  */
-#line 114 "simple.y"
-                                              { gen_if(); }
-#line 1243 "simple.tab.c"
-    break;
-
-  case 19: /* expression: '(' expression ')'  */
+  case 21: /* stmt: IF condition_statement THEN stmts END ';'  */
 #line 119 "simple.y"
-                       { (yyval.tipo) = (yyvsp[-1].tipo); }
-#line 1249 "simple.tab.c"
+                                              { gen_if(); }
+#line 1265 "simple.tab.c"
     break;
 
-  case 20: /* expression: '-' expression  */
-#line 120 "simple.y"
+  case 22: /* expression: '(' expression ')'  */
+#line 124 "simple.y"
+                       { (yyval.tipo) = (yyvsp[-1].tipo); }
+#line 1271 "simple.tab.c"
+    break;
+
+  case 23: /* expression: '-' expression  */
+#line 125 "simple.y"
                              {
         if ((yyvsp[0].tipo) != TYPE_INT) {
             printf("Erro semântico (linha %d): Operação '-' requer inteiro.\n", yylineno);
@@ -1260,11 +1282,11 @@ yyreduce:
             (yyval.tipo) = TYPE_INT;
         }
     }
-#line 1264 "simple.tab.c"
+#line 1286 "simple.tab.c"
     break;
 
-  case 21: /* expression: expression '+' expression  */
-#line 130 "simple.y"
+  case 24: /* expression: expression '+' expression  */
+#line 135 "simple.y"
                               {
         if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) {
             printf("Erro semântico (linha %d): Operação '+' requer inteiros.\n", yylineno);
@@ -1275,11 +1297,11 @@ yyreduce:
             (yyval.tipo) = TYPE_INT;
         }
     }
-#line 1279 "simple.tab.c"
+#line 1301 "simple.tab.c"
     break;
 
-  case 22: /* expression: expression '-' expression  */
-#line 140 "simple.y"
+  case 25: /* expression: expression '-' expression  */
+#line 145 "simple.y"
                               {
         if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) {
             printf("Erro semântico (linha %d): Operação '-' requer inteiros.\n", yylineno);
@@ -1290,11 +1312,11 @@ yyreduce:
             (yyval.tipo) = TYPE_INT;
         }
     }
-#line 1294 "simple.tab.c"
+#line 1316 "simple.tab.c"
     break;
 
-  case 23: /* expression: expression '*' expression  */
-#line 150 "simple.y"
+  case 26: /* expression: expression '*' expression  */
+#line 155 "simple.y"
                               {
         if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) {
             printf("Erro semântico (linha %d): Operação '*' requer inteiros.\n", yylineno);
@@ -1305,11 +1327,11 @@ yyreduce:
             (yyval.tipo) = TYPE_INT;
         }
     }
-#line 1309 "simple.tab.c"
+#line 1331 "simple.tab.c"
     break;
 
-  case 24: /* expression: expression '/' expression  */
-#line 160 "simple.y"
+  case 27: /* expression: expression '/' expression  */
+#line 165 "simple.y"
                               {
         if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) {
             printf("Erro semântico (linha %d): Operação '/' requer inteiros.\n", yylineno);
@@ -1320,17 +1342,17 @@ yyreduce:
             (yyval.tipo) = TYPE_INT;
         }
     }
-#line 1324 "simple.tab.c"
+#line 1346 "simple.tab.c"
     break;
 
-  case 25: /* expression: NUM  */
-#line 170 "simple.y"
+  case 28: /* expression: NUM  */
+#line 175 "simple.y"
         { gen_num((yyvsp[0].ival)); (yyval.tipo) = TYPE_INT; }
-#line 1330 "simple.tab.c"
+#line 1352 "simple.tab.c"
     break;
 
-  case 26: /* expression: IDENTIFIER  */
-#line 171 "simple.y"
+  case 29: /* expression: IDENTIFIER  */
+#line 176 "simple.y"
                {
         if (semantic_check_var((yyvsp[0].sval), yylineno)) {
             int idx = find_symbol((yyvsp[0].sval));
@@ -1340,11 +1362,11 @@ yyreduce:
             (yyval.tipo) = TYPE_VOID;
         }
     }
-#line 1344 "simple.tab.c"
+#line 1366 "simple.tab.c"
     break;
 
 
-#line 1348 "simple.tab.c"
+#line 1370 "simple.tab.c"
 
       default: break;
     }
@@ -1537,7 +1559,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 182 "simple.y"
+#line 187 "simple.y"
 
 
 void yyerror(const char *s)
@@ -1558,7 +1580,10 @@ int main(int argc, char **argv)
     } else {
         yyin = stdin;
     }
+    
+    codegen_init("output.tm");
     semantic_init();
+
     if (yyparse() == 0 && result == 0 && !semantic_had_error()) 
     {
         printf("\nSintatico e semantico OK\n");
@@ -1566,6 +1591,9 @@ int main(int argc, char **argv)
     {
         printf("\nErro sintatico ou semantico.\n");
     }
+
+    codegen_finalize();
+
     if (yyin != stdin) fclose(yyin);
     return result;
 }
