@@ -74,7 +74,6 @@ condition:
         } else {
 	     gen_relop($2); /* Generate code for the comparison */
              $$ = TYPE_INT; /* The result is an INTEGER (0 for false, 1 for true) */
-             printf("## Parsed Condition: %s\n", $2);
 	}
     }
 ;

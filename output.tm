@@ -9,28 +9,84 @@
   4:   LDC 0,0(0)	Load constant value into AC
 * ASSIGN: storing value
   5:    ST 0,0(5)	Store result to variable
+* LOAD: loading constant
+  6:   LDC 0,1(0)	Load constant value into AC
+* ASSIGN: storing value
+  7:    ST 0,1(5)	Store result to variable
+* LOAD: loading constant
+  8:   LDC 0,2(0)	Load constant value into AC
+* ASSIGN: storing value
+  9:    ST 0,2(5)	Store result to variable
 * WHILE: loop start
 * LOAD: loading variable
-  6:    LD 0,0(5)	Load variable value into AC
+ 10:    LD 0,0(5)	Load variable value into AC
 * LOAD: loading constant
-  7:   LDC 0,10(0)	Load constant value into AC
+ 11:   LDC 0,5(0)	Load constant value into AC
 * RELOP: comparing values
-  8:    ST 0,0(5)	Store left operand
-  9:    LD 1,0(5)	Load left operand into AC1
- 10:   SUB 0,1,0	Compare by subtraction (L-R)
+ 12:    ST 0,0(5)	Store left operand
+ 13:    LD 1,0(5)	Load left operand into AC1
+ 14:   SUB 0,1,0	Compare by subtraction (L-R)
+* WHILE: test condition
+* WHILE: loop start
+* LOAD: loading variable
+ 16:    LD 0,1(5)	Load variable value into AC
+* LOAD: loading constant
+ 17:   LDC 0,10(0)	Load constant value into AC
+* RELOP: comparing values
+ 18:    ST 0,0(5)	Store left operand
+ 19:    LD 1,0(5)	Load left operand into AC1
+ 20:   SUB 0,1,0	Compare by subtraction (L-R)
+* WHILE: test condition
+* WHILE: loop start
+* LOAD: loading variable
+ 22:    LD 0,2(5)	Load variable value into AC
+* LOAD: loading constant
+ 23:   LDC 0,15(0)	Load constant value into AC
+* RELOP: comparing values
+ 24:    ST 0,0(5)	Store left operand
+ 25:    LD 1,0(5)	Load left operand into AC1
+ 26:   SUB 0,1,0	Compare by subtraction (L-R)
 * WHILE: test condition
 * LOAD: loading variable
- 12:    LD 0,0(5)	Load variable value into AC
+ 28:    LD 0,2(5)	Load variable value into AC
 * LOAD: loading constant
- 13:   LDC 0,1(0)	Load constant value into AC
+ 29:   LDC 0,1(0)	Load constant value into AC
 * OP: combining values
- 14:    ST 0,0(5)	Store left operand
- 15:    LD 1,0(5)	Load left operand into AC1
- 16:   ADD 0,1,0	Op +
+ 30:    ST 0,0(5)	Store left operand
+ 31:    LD 1,0(5)	Load left operand into AC1
+ 32:   ADD 0,1,0	Op +
 * ASSIGN: storing value
- 17:    ST 0,0(5)	Store result to variable
+ 33:    ST 0,2(5)	Store result to variable
 * WHILE: end of loop body
- 18:   LDC 7,6(0)	Jump back to loop start
- 11:   JEQ 0,19(0)	Jump out of loop if condition is false
+ 34:   LDC 7,22(0)	Jump back to loop start
+ 27:   JEQ 0,35(0)	Jump out of loop if condition is false
 * WHILE: end of loop
- 19:  HALT 0,0,0	End of program
+* LOAD: loading variable
+ 35:    LD 0,1(5)	Load variable value into AC
+* LOAD: loading constant
+ 36:   LDC 0,1(0)	Load constant value into AC
+* OP: combining values
+ 37:    ST 0,0(5)	Store left operand
+ 38:    LD 1,0(5)	Load left operand into AC1
+ 39:   ADD 0,1,0	Op +
+* ASSIGN: storing value
+ 40:    ST 0,1(5)	Store result to variable
+* WHILE: end of loop body
+ 41:   LDC 7,16(0)	Jump back to loop start
+ 21:   JEQ 0,42(0)	Jump out of loop if condition is false
+* WHILE: end of loop
+* LOAD: loading variable
+ 42:    LD 0,0(5)	Load variable value into AC
+* LOAD: loading constant
+ 43:   LDC 0,1(0)	Load constant value into AC
+* OP: combining values
+ 44:    ST 0,0(5)	Store left operand
+ 45:    LD 1,0(5)	Load left operand into AC1
+ 46:   ADD 0,1,0	Op +
+* ASSIGN: storing value
+ 47:    ST 0,0(5)	Store result to variable
+* WHILE: end of loop body
+ 48:   LDC 7,10(0)	Jump back to loop start
+ 15:   JEQ 0,49(0)	Jump out of loop if condition is false
+* WHILE: end of loop
+ 49:  HALT 0,0,0	End of program
