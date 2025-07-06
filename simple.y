@@ -42,7 +42,7 @@ program:
     decls stmts { semantic_print_table(); }
 ;
 
-decls:
+decls: %empty 
     /* vazio */
   | decls decl
 ;
@@ -53,7 +53,7 @@ decl:
     }
 ;
 
-stmts:
+stmts: %empty 
     /* vazio */
   | stmts stmt
 ;
