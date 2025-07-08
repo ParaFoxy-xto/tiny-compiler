@@ -62,21 +62,17 @@ extern int yydebug;
     DO = 263,                      /* DO  */
     END = 264,                     /* END  */
     ELSE = 265,                    /* ELSE  */
-    FI = 266,                      /* FI  */
-    IF = 267,                      /* IF  */
-    IN = 268,                      /* IN  */
-    LET = 269,                     /* LET  */
-    READ = 270,                    /* READ  */
-    SKIP = 271,                    /* SKIP  */
-    THEN = 272,                    /* THEN  */
-    WRITE = 273,                   /* WRITE  */
-    LT = 274,                      /* LT  */
-    GT = 275,                      /* GT  */
-    EQ = 276,                      /* EQ  */
-    NEQ = 277,                     /* NEQ  */
-    AND_OP = 278,                  /* AND_OP  */
-    OR_OP = 279,                   /* OR_OP  */
-    NEG = 280                      /* NEG  */
+    IN = 266,                      /* IN  */
+    LET = 267,                     /* LET  */
+    READ = 268,                    /* READ  */
+    SKIP = 269,                    /* SKIP  */
+    THEN = 270,                    /* THEN  */
+    WRITE = 271,                   /* WRITE  */
+    LT = 272,                      /* LT  */
+    GT = 273,                      /* GT  */
+    EQ = 274,                      /* EQ  */
+    NEQ = 275,                     /* NEQ  */
+    NEG = 276                      /* NEG  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -85,13 +81,13 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 16 "simple.y"
+#line 38 "simple.y"
 
     int ival;      // Para NUM
     char* sval;    // Para IDENTIFIER
     int tipo;      // Para tipo de expressão
 
-#line 95 "simple.tab.h"
+#line 91 "simple.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

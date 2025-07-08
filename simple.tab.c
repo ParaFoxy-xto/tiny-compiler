@@ -71,8 +71,9 @@
 
 #include <stdio.h>
 #include "semantic.h"
-#include "codegen.h"
+#include "tac.h"
 #include "Analisador-Lexico/symbol_table.h"
+#include <string.h>
 
 int yylex();
 void yyerror(const char *s);
@@ -80,7 +81,28 @@ extern int yylineno;
 
 int result = 0;
 
-#line 84 "simple.tab.c"
+int semantic_get_type(const char* name) {
+    if (name == NULL) return TYPE_VOID;
+    if (name[0] == 't') return TYPE_INT;
+    if (name[0] >= '0' && name[0] <= '9') return TYPE_INT;
+    
+    int idx = find_symbol(name);
+    if (idx != -1) {
+        return symbol_table[idx].type;
+    }
+    return TYPE_VOID;
+}
+
+
+TacOpCode relop_to_tac(const char* op) {
+    if (strcmp(op, "<") == 0) return TAC_OP_LT;
+    if (strcmp(op, ">") == 0) return TAC_OP_GT;
+    if (strcmp(op, "=") == 0) return TAC_OP_EQ;
+    if (strcmp(op, "<>") == 0) return TAC_OP_NEQ;
+    return -1;
+}
+
+#line 106 "simple.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -119,42 +141,34 @@ enum yysymbol_kind_t
   YYSYMBOL_DO = 8,                         /* DO  */
   YYSYMBOL_END = 9,                        /* END  */
   YYSYMBOL_ELSE = 10,                      /* ELSE  */
-  YYSYMBOL_FI = 11,                        /* FI  */
-  YYSYMBOL_IF = 12,                        /* IF  */
-  YYSYMBOL_IN = 13,                        /* IN  */
-  YYSYMBOL_LET = 14,                       /* LET  */
-  YYSYMBOL_READ = 15,                      /* READ  */
-  YYSYMBOL_SKIP = 16,                      /* SKIP  */
-  YYSYMBOL_THEN = 17,                      /* THEN  */
-  YYSYMBOL_WRITE = 18,                     /* WRITE  */
-  YYSYMBOL_LT = 19,                        /* LT  */
-  YYSYMBOL_GT = 20,                        /* GT  */
-  YYSYMBOL_EQ = 21,                        /* EQ  */
-  YYSYMBOL_NEQ = 22,                       /* NEQ  */
-  YYSYMBOL_AND_OP = 23,                    /* AND_OP  */
-  YYSYMBOL_OR_OP = 24,                     /* OR_OP  */
-  YYSYMBOL_25_ = 25,                       /* '-'  */
-  YYSYMBOL_26_ = 26,                       /* '+'  */
-  YYSYMBOL_27_ = 27,                       /* '*'  */
-  YYSYMBOL_28_ = 28,                       /* '/'  */
-  YYSYMBOL_29_ = 29,                       /* '^'  */
-  YYSYMBOL_NEG = 30,                       /* NEG  */
-  YYSYMBOL_31_ = 31,                       /* ';'  */
-  YYSYMBOL_32_ = 32,                       /* '('  */
-  YYSYMBOL_33_ = 33,                       /* ')'  */
-  YYSYMBOL_YYACCEPT = 34,                  /* $accept  */
-  YYSYMBOL_program = 35,                   /* program  */
-  YYSYMBOL_decls = 36,                     /* decls  */
-  YYSYMBOL_decl = 37,                      /* decl  */
-  YYSYMBOL_stmts = 38,                     /* stmts  */
-  YYSYMBOL_relop = 39,                     /* relop  */
-  YYSYMBOL_condition = 40,                 /* condition  */
-  YYSYMBOL_condition_statement = 41,       /* condition_statement  */
-  YYSYMBOL_M_start_loop = 42,              /* M_start_loop  */
-  YYSYMBOL_M_after_condition = 43,         /* M_after_condition  */
-  YYSYMBOL_M_end_loop = 44,                /* M_end_loop  */
-  YYSYMBOL_stmt = 45,                      /* stmt  */
-  YYSYMBOL_expression = 46                 /* expression  */
+  YYSYMBOL_IN = 11,                        /* IN  */
+  YYSYMBOL_LET = 12,                       /* LET  */
+  YYSYMBOL_READ = 13,                      /* READ  */
+  YYSYMBOL_SKIP = 14,                      /* SKIP  */
+  YYSYMBOL_THEN = 15,                      /* THEN  */
+  YYSYMBOL_WRITE = 16,                     /* WRITE  */
+  YYSYMBOL_LT = 17,                        /* LT  */
+  YYSYMBOL_GT = 18,                        /* GT  */
+  YYSYMBOL_EQ = 19,                        /* EQ  */
+  YYSYMBOL_NEQ = 20,                       /* NEQ  */
+  YYSYMBOL_21_ = 21,                       /* '-'  */
+  YYSYMBOL_22_ = 22,                       /* '+'  */
+  YYSYMBOL_NEG = 23,                       /* NEG  */
+  YYSYMBOL_24_ = 24,                       /* ';'  */
+  YYSYMBOL_25_ = 25,                       /* '('  */
+  YYSYMBOL_26_ = 26,                       /* ')'  */
+  YYSYMBOL_YYACCEPT = 27,                  /* $accept  */
+  YYSYMBOL_program = 28,                   /* program  */
+  YYSYMBOL_decls = 29,                     /* decls  */
+  YYSYMBOL_decl = 30,                      /* decl  */
+  YYSYMBOL_stmts = 31,                     /* stmts  */
+  YYSYMBOL_relop = 32,                     /* relop  */
+  YYSYMBOL_condition = 33,                 /* condition  */
+  YYSYMBOL_condition_statement = 34,       /* condition_statement  */
+  YYSYMBOL_M_start_loop = 35,              /* M_start_loop  */
+  YYSYMBOL_stmt = 36,                      /* stmt  */
+  YYSYMBOL_37_1 = 37,                      /* $@1  */
+  YYSYMBOL_expression = 38                 /* expression  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -482,19 +496,19 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  3
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   65
+#define YYLAST   35
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  34
+#define YYNTOKENS  27
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  13
+#define YYNNTS  12
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  29
+#define YYNRULES  22
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  56
+#define YYNSTATES  39
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   280
+#define YYMAXUTOK   276
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -512,12 +526,12 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-      32,    33,    27,    26,     2,    25,     2,    28,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,    31,
+      25,    26,     2,    22,     2,    21,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,    24,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,    29,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -535,17 +549,16 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      30
+      15,    16,    17,    18,    19,    20,    23
 };
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    42,    42,    45,    47,    51,    56,    58,    62,    63,
-      64,    65,    69,    83,    84,    94,   107,   108,   109,   112,
-     118,   119,   124,   125,   135,   145,   155,   165,   175,   176
+       0,    62,    62,    68,    69,    73,    78,    79,    83,    84,
+      85,    86,    90,   103,   106,   114,   120,   120,   144,   145,
+     156,   167,   172
 };
 #endif
 
@@ -562,12 +575,11 @@ static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
 static const char *const yytname[] =
 {
   "\"end of file\"", "error", "\"invalid token\"", "NUM", "IDENTIFIER",
-  "INTEGER", "ASSGNOP", "WHILE", "DO", "END", "ELSE", "FI", "IF", "IN",
-  "LET", "READ", "SKIP", "THEN", "WRITE", "LT", "GT", "EQ", "NEQ",
-  "AND_OP", "OR_OP", "'-'", "'+'", "'*'", "'/'", "'^'", "NEG", "';'",
-  "'('", "')'", "$accept", "program", "decls", "decl", "stmts", "relop",
-  "condition", "condition_statement", "M_start_loop", "M_after_condition",
-  "M_end_loop", "stmt", "expression", YY_NULLPTR
+  "INTEGER", "ASSGNOP", "WHILE", "DO", "END", "ELSE", "IN", "LET", "READ",
+  "SKIP", "THEN", "WRITE", "LT", "GT", "EQ", "NEQ", "'-'", "'+'", "NEG",
+  "';'", "'('", "')'", "$accept", "program", "decls", "decl", "stmts",
+  "relop", "condition", "condition_statement", "M_start_loop", "stmt",
+  "$@1", "expression", YY_NULLPTR
 };
 
 static const char *
@@ -577,7 +589,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-22)
+#define YYPACT_NINF (-19)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -591,12 +603,10 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-     -22,     4,     1,   -22,     6,   -22,    43,    25,    56,   -22,
-      -3,   -22,   -22,    -3,    -3,   -22,   -22,    -3,    -3,   -22,
-      -8,    11,    26,    -6,   -22,   -14,   -22,    -3,    -3,   -22,
-     -22,   -22,   -22,    -3,    -3,    -3,    -3,    -3,   -22,   -22,
-     -22,    36,   -22,   -22,    -7,    -7,   -22,   -22,    33,   -22,
-      32,    37,   -22,   -22,    34,   -22
+     -19,    10,    23,   -19,    25,   -19,    17,     6,    26,   -19,
+     -19,   -19,    -3,    -3,   -19,   -19,    -3,   -15,   -19,    27,
+      -4,   -18,    -3,    -3,   -19,   -19,   -19,   -19,   -19,   -19,
+      -3,   -19,   -19,   -19,   -19,     5,    16,     7,   -19
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -604,26 +614,24 @@ static const yytype_int8 yypact[] =
    means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       3,     0,     6,     1,     0,     4,     2,     0,     0,    16,
-       0,     7,     5,     0,     0,    28,    29,     0,     0,    13,
-       0,     0,     0,     0,    23,     0,     6,     0,     0,     8,
-       9,    10,    11,     0,     0,     0,     0,     0,    19,    17,
-      22,     0,    14,    15,    25,    24,    26,    27,    12,     6,
-       0,     0,    21,    18,     0,    20
+       3,     0,     6,     1,     0,     4,     2,     0,     0,    14,
+       7,     5,     0,     0,    21,    22,     0,     0,    13,     0,
+       0,     0,     0,     0,    15,    16,     8,     9,    10,    11,
+       0,    18,    20,    19,     6,    12,     0,     0,    17
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -22,   -22,   -22,   -22,   -21,   -22,     7,    28,   -22,   -22,
-     -22,   -22,   -10
+     -19,   -19,   -19,   -19,    -1,   -19,   -19,   -19,   -19,   -19,
+     -19,   -11
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,     1,     2,     5,     6,    37,    19,    20,    14,    49,
-      54,    11,    21
+       0,     1,     2,     5,     6,    30,    18,    19,    13,    10,
+      34,    17
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -631,52 +639,44 @@ static const yytype_int8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      15,    16,    39,    22,     3,    41,     4,    24,    25,    26,
-       7,    33,    34,    35,    36,    27,    28,    27,    28,    40,
-      35,    36,    17,    44,    45,    46,    47,    48,    51,    18,
-      29,    30,    31,    32,    42,    43,    33,    34,    35,    36,
-       8,     8,    23,     9,     9,    50,    53,     8,    10,    10,
-       9,    33,    34,    35,    36,    10,    12,    38,    33,    34,
-      35,    36,    13,    52,     0,    55
+      14,    15,    20,    22,    23,    21,    22,    23,    31,    24,
+       3,    32,    33,    26,    27,    28,    29,    22,    23,    35,
+       8,     8,    16,     9,     9,    37,    22,    23,     4,     7,
+      11,    38,    12,    36,     0,    25
 };
 
 static const yytype_int8 yycheck[] =
 {
-       3,     4,     8,    13,     0,    26,     5,    17,    18,    17,
-       4,    25,    26,    27,    28,    23,    24,    23,    24,    33,
-      27,    28,    25,    33,    34,    35,    36,    37,    49,    32,
-      19,    20,    21,    22,    27,    28,    25,    26,    27,    28,
-       4,     4,    14,     7,     7,     9,     9,     4,    12,    12,
-       7,    25,    26,    27,    28,    12,    31,    31,    25,    26,
-      27,    28,     6,    31,    -1,    31
+       3,     4,    13,    21,    22,    16,    21,    22,    26,    24,
+       0,    22,    23,    17,    18,    19,    20,    21,    22,    30,
+       4,     4,    25,     7,     7,     9,    21,    22,     5,     4,
+      24,    24,     6,    34,    -1,     8
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,    35,    36,     0,     5,    37,    38,     4,     4,     7,
-      12,    45,    31,     6,    42,     3,     4,    25,    32,    40,
-      41,    46,    46,    41,    46,    46,    17,    23,    24,    19,
-      20,    21,    22,    25,    26,    27,    28,    39,    31,     8,
-      33,    38,    40,    40,    46,    46,    46,    46,    46,    43,
-       9,    38,    31,     9,    44,    31
+       0,    28,    29,     0,     5,    30,    31,     4,     4,     7,
+      36,    24,     6,    35,     3,     4,    25,    38,    33,    34,
+      38,    38,    21,    22,    24,     8,    17,    18,    19,    20,
+      32,    26,    38,    38,    37,    38,    31,     9,    24
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    34,    35,    36,    36,    37,    38,    38,    39,    39,
-      39,    39,    40,    41,    41,    41,    42,    43,    44,    45,
-      45,    45,    46,    46,    46,    46,    46,    46,    46,    46
+       0,    27,    28,    29,    29,    30,    31,    31,    32,    32,
+      32,    32,    33,    34,    35,    36,    37,    36,    38,    38,
+      38,    38,    38
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     2,     0,     2,     3,     0,     2,     1,     1,
-       1,     1,     3,     1,     3,     3,     0,     0,     0,     4,
-       9,     6,     3,     2,     3,     3,     3,     3,     1,     1
+       1,     1,     3,     1,     0,     4,     0,     8,     3,     3,
+       3,     1,     1
 };
 
 
@@ -1140,233 +1140,181 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program: decls stmts  */
-#line 42 "simple.y"
-                { semantic_print_table(); }
-#line 1146 "simple.tab.c"
+#line 62 "simple.y"
+                    { 
+		semantic_print_table();
+		tac_print();
+	}
+#line 1149 "simple.tab.c"
     break;
 
   case 5: /* decl: INTEGER IDENTIFIER ';'  */
-#line 51 "simple.y"
+#line 73 "simple.y"
                            { 
         semantic_declare_var((yyvsp[-1].sval), yylineno);
     }
-#line 1154 "simple.tab.c"
+#line 1157 "simple.tab.c"
     break;
 
   case 8: /* relop: LT  */
-#line 62 "simple.y"
+#line 83 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1160 "simple.tab.c"
+#line 1163 "simple.tab.c"
     break;
 
   case 9: /* relop: GT  */
-#line 63 "simple.y"
+#line 84 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1166 "simple.tab.c"
+#line 1169 "simple.tab.c"
     break;
 
   case 10: /* relop: EQ  */
-#line 64 "simple.y"
+#line 85 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1172 "simple.tab.c"
+#line 1175 "simple.tab.c"
     break;
 
   case 11: /* relop: NEQ  */
-#line 65 "simple.y"
+#line 86 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1178 "simple.tab.c"
+#line 1181 "simple.tab.c"
     break;
 
   case 12: /* condition: expression relop expression  */
-#line 69 "simple.y"
+#line 90 "simple.y"
                                 {
-	/* Placeholder for semantic check and code generation */
-        if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) {
+	if (semantic_get_type((yyvsp[-2].sval)) != TYPE_INT || semantic_get_type((yyvsp[0].sval)) != TYPE_INT) {
              printf("Erro semântico (linha %d): Operadores de condição requerem inteiros.\n", yylineno);
 	     semantic_set_error();
         } else {
-	     gen_relop((yyvsp[-1].sval)); /* Generate code for the comparison */
-             (yyval.tipo) = TYPE_INT; /* The result is an INTEGER (0 for false, 1 for true) */
-             printf("## Parsed Condition: %s\n", (yyvsp[-1].sval));
+             (yyval.sval) = tac_new_temp();
+	     tac_create(relop_to_tac((yyvsp[-1].sval)), (yyval.sval), (yyvsp[-2].sval), (yyvsp[0].sval));
 	}
+	free((yyvsp[-2].sval)); free((yyvsp[-1].sval)); free((yyvsp[0].sval));
     }
-#line 1194 "simple.tab.c"
+#line 1196 "simple.tab.c"
     break;
 
-  case 14: /* condition_statement: condition_statement AND_OP condition  */
-#line 84 "simple.y"
-                                           {
-        if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) { /* Check for INTEGER operands */
-            printf("Erro semântico (linha %d): Operador '&&' requer operandos inteiros/booleanos.\n", yylineno);
-            semantic_set_error();
-            (yyval.tipo) = TYPE_VOID;
-        } else {
-            gen_op("AND");
-            (yyval.tipo) = TYPE_INT; /* The result is an INTEGER */
-        }
-    }
-#line 1209 "simple.tab.c"
+  case 13: /* condition_statement: condition  */
+#line 103 "simple.y"
+                { (yyval.sval) = (yyvsp[0].sval); }
+#line 1202 "simple.tab.c"
     break;
 
-  case 15: /* condition_statement: condition_statement OR_OP condition  */
-#line 94 "simple.y"
-                                          {
-        if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) { /* Check for INTEGER operands */
-            printf("Erro semântico (linha %d): Operador '||' requer operandos inteiros/booleanos.\n", yylineno);
-            semantic_set_error();
-            (yyval.tipo) = TYPE_VOID;
-        } else {
-            gen_op("OR");
-            (yyval.tipo) = TYPE_INT;
+  case 14: /* M_start_loop: %empty  */
+#line 106 "simple.y"
+                     { 
+    char* start_label = tac_new_label();
+    tac_create(TAC_OP_LABEL, start_label, NULL, NULL);
+    tac_push_label(start_label);
+    free(start_label);
+}
+#line 1213 "simple.tab.c"
+    break;
+
+  case 15: /* stmt: IDENTIFIER ASSGNOP expression ';'  */
+#line 114 "simple.y"
+                                      {
+        if (semantic_check_var((yyvsp[-3].sval), yylineno)) {
+            tac_create(TAC_OP_ASSIGN, (yyvsp[-3].sval), (yyvsp[-1].sval), NULL);
         }
+        free((yyvsp[-3].sval)); free((yyvsp[-1].sval));
     }
 #line 1224 "simple.tab.c"
     break;
 
-  case 16: /* M_start_loop: %empty  */
-#line 107 "simple.y"
-                     { gen_loop_start(); }
-#line 1230 "simple.tab.c"
+  case 16: /* $@1: %empty  */
+#line 120 "simple.y"
+                                              {
+        char* end_label = tac_new_label();
+
+        tac_create(TAC_OP_IF_FALSE, end_label, (yyvsp[-1].sval), NULL);
+
+        tac_push_label(end_label);
+
+        free((yyvsp[-1].sval));
+        free(end_label);
+      }
+#line 1239 "simple.tab.c"
     break;
 
-  case 17: /* M_after_condition: %empty  */
-#line 108 "simple.y"
-                          { gen_after_condition(); }
-#line 1236 "simple.tab.c"
-    break;
+  case 17: /* stmt: WHILE M_start_loop condition_statement DO $@1 stmts END ';'  */
+#line 130 "simple.y"
+                    {
+        char* end_label = tac_pop_label();
+        char* start_label = tac_pop_label();
 
-  case 18: /* M_end_loop: %empty  */
-#line 109 "simple.y"
-                   { gen_loop_end(); }
-#line 1242 "simple.tab.c"
-    break;
+        tac_create(TAC_OP_GOTO, start_label, NULL, NULL);
+        tac_create(TAC_OP_LABEL, end_label, NULL, NULL);
 
-  case 19: /* stmt: IDENTIFIER ASSGNOP expression ';'  */
-#line 112 "simple.y"
-                                      {
-        if (semantic_check_var((yyvsp[-3].sval), yylineno)) {
-            int idx = find_symbol((yyvsp[-3].sval));
-            gen_assign(symbol_table[idx].address);
-        }
+        free(start_label);
+        free(end_label);
     }
-#line 1253 "simple.tab.c"
+#line 1254 "simple.tab.c"
     break;
 
-  case 20: /* stmt: WHILE M_start_loop condition_statement DO M_after_condition stmts END M_end_loop ';'  */
-#line 118 "simple.y"
-                                                                                         { }
-#line 1259 "simple.tab.c"
+  case 18: /* expression: '(' expression ')'  */
+#line 144 "simple.y"
+                       { (yyval.sval) = (yyvsp[-1].sval); }
+#line 1260 "simple.tab.c"
     break;
 
-  case 21: /* stmt: IF condition_statement THEN stmts END ';'  */
-#line 119 "simple.y"
-                                              { gen_if(); }
-#line 1265 "simple.tab.c"
-    break;
-
-  case 22: /* expression: '(' expression ')'  */
-#line 124 "simple.y"
-                       { (yyval.tipo) = (yyvsp[-1].tipo); }
-#line 1271 "simple.tab.c"
-    break;
-
-  case 23: /* expression: '-' expression  */
-#line 125 "simple.y"
-                             {
-        if ((yyvsp[0].tipo) != TYPE_INT) {
-            printf("Erro semântico (linha %d): Operação '-' requer inteiro.\n", yylineno);
-            semantic_set_error();
-            (yyval.tipo) = TYPE_VOID;
-        } else {
-            gen_neg();
-            (yyval.tipo) = TYPE_INT;
-        }
-    }
-#line 1286 "simple.tab.c"
-    break;
-
-  case 24: /* expression: expression '+' expression  */
-#line 135 "simple.y"
-                              {
-        if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) {
-            printf("Erro semântico (linha %d): Operação '+' requer inteiros.\n", yylineno);
-            semantic_set_error();
-            (yyval.tipo) = TYPE_VOID;
-        } else {
-            gen_op("ADD");
-            (yyval.tipo) = TYPE_INT;
-        }
-    }
-#line 1301 "simple.tab.c"
-    break;
-
-  case 25: /* expression: expression '-' expression  */
+  case 19: /* expression: expression '+' expression  */
 #line 145 "simple.y"
                               {
-        if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) {
+	if (semantic_get_type((yyvsp[-2].sval)) != TYPE_INT || semantic_get_type((yyvsp[0].sval)) != TYPE_INT) {
+            printf("Erro semântico (linha %d): Operação '+' requer inteiros.\n", yylineno);
+            semantic_set_error();
+            (yyval.sval) = TYPE_VOID;
+        } else {
+		(yyval.sval) = tac_new_temp();
+		tac_create(TAC_OP_ADD, (yyval.sval), (yyvsp[-2].sval), (yyvsp[0].sval));
+        }
+	free((yyvsp[-2].sval)); free((yyvsp[0].sval));
+    }
+#line 1276 "simple.tab.c"
+    break;
+
+  case 20: /* expression: expression '-' expression  */
+#line 156 "simple.y"
+                              {
+	if (semantic_get_type((yyvsp[-2].sval)) != TYPE_INT || semantic_get_type((yyvsp[0].sval)) != TYPE_INT) {
             printf("Erro semântico (linha %d): Operação '-' requer inteiros.\n", yylineno);
             semantic_set_error();
-            (yyval.tipo) = TYPE_VOID;
+            (yyval.sval) = TYPE_VOID;
         } else {
-            gen_op("SUB");
-            (yyval.tipo) = TYPE_INT;
+            (yyval.sval) = tac_new_temp();
+            tac_create(TAC_OP_SUB, (yyval.sval), (yyvsp[-2].sval), (yyvsp[0].sval));
         }
+        free((yyvsp[-2].sval)); free((yyvsp[0].sval));
     }
-#line 1316 "simple.tab.c"
+#line 1292 "simple.tab.c"
     break;
 
-  case 26: /* expression: expression '*' expression  */
-#line 155 "simple.y"
-                              {
-        if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) {
-            printf("Erro semântico (linha %d): Operação '*' requer inteiros.\n", yylineno);
-            semantic_set_error();
-            (yyval.tipo) = TYPE_VOID;
-        } else {
-            gen_op("MUL");
-            (yyval.tipo) = TYPE_INT;
-        }
+  case 21: /* expression: NUM  */
+#line 167 "simple.y"
+        { 
+	char buffer[32];
+        sprintf(buffer, "%d", (yyvsp[0].ival));
+        (yyval.sval) = strdup(buffer);
     }
-#line 1331 "simple.tab.c"
+#line 1302 "simple.tab.c"
     break;
 
-  case 27: /* expression: expression '/' expression  */
-#line 165 "simple.y"
-                              {
-        if ((yyvsp[-2].tipo) != TYPE_INT || (yyvsp[0].tipo) != TYPE_INT) {
-            printf("Erro semântico (linha %d): Operação '/' requer inteiros.\n", yylineno);
-            semantic_set_error();
-            (yyval.tipo) = TYPE_VOID;
-        } else {
-            gen_op("DIV");
-            (yyval.tipo) = TYPE_INT;
-        }
-    }
-#line 1346 "simple.tab.c"
-    break;
-
-  case 28: /* expression: NUM  */
-#line 175 "simple.y"
-        { gen_num((yyvsp[0].ival)); (yyval.tipo) = TYPE_INT; }
-#line 1352 "simple.tab.c"
-    break;
-
-  case 29: /* expression: IDENTIFIER  */
-#line 176 "simple.y"
+  case 22: /* expression: IDENTIFIER  */
+#line 172 "simple.y"
                {
         if (semantic_check_var((yyvsp[0].sval), yylineno)) {
-            int idx = find_symbol((yyvsp[0].sval));
-            gen_id(symbol_table[idx].address);
-            (yyval.tipo) = symbol_table[idx].type;
+            (yyval.sval) = (yyvsp[0].sval);
         } else {
-            (yyval.tipo) = TYPE_VOID;
+            (yyval.sval) = NULL;
         }
     }
-#line 1366 "simple.tab.c"
+#line 1314 "simple.tab.c"
     break;
 
 
-#line 1370 "simple.tab.c"
+#line 1318 "simple.tab.c"
 
       default: break;
     }
@@ -1559,7 +1507,8 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 187 "simple.y"
+#line 181 "simple.y"
+
 
 
 void yyerror(const char *s)
@@ -1580,9 +1529,9 @@ int main(int argc, char **argv)
     } else {
         yyin = stdin;
     }
-    
-    codegen_init("output.tm");
+
     semantic_init();
+    tac_init();
 
     if (yyparse() == 0 && result == 0 && !semantic_had_error()) 
     {
@@ -1592,8 +1541,7 @@ int main(int argc, char **argv)
         printf("\nErro sintatico ou semantico.\n");
     }
 
-    codegen_finalize();
-
     if (yyin != stdin) fclose(yyin);
+    tac_free();
     return result;
 }

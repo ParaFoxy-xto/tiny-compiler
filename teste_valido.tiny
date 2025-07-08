@@ -1,4 +1,6 @@
 integer x;
 integer y;
+integer z;
 x := 10;
 y := x + 5;
+z := y + 20;

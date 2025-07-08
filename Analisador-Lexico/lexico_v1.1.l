@@ -21,8 +21,6 @@ whitespace [ \t]+
 ">"   { yylval.sval = strdup(yytext); return GT; }
 "="   { yylval.sval = strdup(yytext); return EQ; }
 "<>"  { yylval.sval = strdup(yytext); return NEQ; }
-"&&"  { yylval.sval = strdup(yytext); return AND_OP; }
-"||"  { yylval.sval = strdup(yytext); return OR_OP; }
 "+"       { return '+'; }
 "-"       { return '-'; }
 "("       { return '('; }
