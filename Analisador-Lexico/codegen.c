@@ -88,13 +88,6 @@ void codegen_finalize() {
     fclose(code);
 }
 
-void gen_if() {
-    int savedLoc;
-    emitComment("IF: jump to then part");
-    savedLoc = emitSkip(1); // Skip a location for the conditional jump
-    push_loc(savedLoc);     // Push location onto stack for backpatching
-}
-
 void gen_loop_start() {
     push_loc(emitLoc); // Push address of loop start
     emitComment("WHILE: loop start");
@@ -122,7 +115,6 @@ void gen_loop_end() {
     emitComment("WHILE: end of loop");
 }
 
-// --- Expression and Statement Code Generation ---
 void gen_assign(int address) {
     emitComment("ASSIGN: storing value");
     emitRM("ST", AC, address, GP, "Store result to variable");
@@ -138,24 +130,14 @@ void gen_num(int value) {
     emitRM("LDC", AC, value, 0, "Load constant value into AC");
 }
 
-void gen_neg() {
-    emitComment("NEGATE: value");
-    emitRO("SUB", AC, AC1, AC, "Negate (0 - value)"); // Using 0 in AC1
-}
-
 void gen_op(const char* op) {
     emitComment("OP: combining values");
     emitRM("ST", AC, 0, GP, "Store left operand"); // Temporarily store left operand
-    // Right operand is now in AC from previous expression parsing
     emitRM("LD", AC1, 0, GP, "Load left operand into AC1");
     if (strcmp(op, "ADD") == 0) {
         emitRO("ADD", AC, AC1, AC, "Op +");
     } else if (strcmp(op, "SUB") == 0) {
         emitRO("SUB", AC, AC1, AC, "Op -");
-    } else if (strcmp(op, "MUL") == 0) {
-        emitRO("MUL", AC, AC1, AC, "Op *");
-    } else if (strcmp(op, "DIV") == 0) {
-        emitRO("DIV", AC, AC1, AC, "Op /");
     }
 }
 
@@ -164,7 +146,4 @@ void gen_relop(const char* op) {
     emitRM("ST", AC, 0, GP, "Store left operand");
     emitRM("LD", AC1, 0, GP, "Load left operand into AC1");
     emitRO("SUB", AC, AC1, AC, "Compare by subtraction (L-R)");
-    // The jump instruction will be emitted by the calling rule (e.g., gen_after_condition)
-    // Here we just set the flags. The TM instructions JLT, JEQ, etc., test AC.
-    // For this simple model, we assume the calling function handles the jump.
 }

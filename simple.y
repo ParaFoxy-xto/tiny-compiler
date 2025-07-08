@@ -3,7 +3,6 @@
 %{
 #include <stdio.h>
 #include "semantic.h"
-#include "codegen.h"
 #include "Analisador-Lexico/symbol_table.h"
 
 int yylex();
@@ -19,7 +18,7 @@ int result = 0;
     int tipo;      // Para tipo de expressão
 }
 
-%token NUM IDENTIFIER INTEGER ASSGNOP WHILE DO END ELSE FI IF IN LET READ SKIP THEN WRITE
+%token NUM IDENTIFIER INTEGER ASSGNOP WHILE DO END ELSE IN LET READ SKIP THEN WRITE
 %token <sval> LT GT EQ NEQ /* Relational Operators: < > = <> */
 %token <sval> AND_OP OR_OP  /* Boolean Operators: && || */
 %type <tipo> expression
@@ -29,8 +28,6 @@ int result = 0;
 %type <ival> NUM
 %type <sval> relop
 %left '-' '+' 
-%left '*' '/' 
-%right '^'
 
 /* Para numeros negativos */
 %precedence NEG
@@ -72,7 +69,6 @@ condition:
              printf("Erro semântico (linha %d): Operadores de condição requerem inteiros.\n", yylineno);
 	     semantic_set_error();
         } else {
-	     gen_relop($2); /* Generate code for the comparison */
              $$ = TYPE_INT; /* The result is an INTEGER (0 for false, 1 for true) */
 	}
     }
@@ -82,40 +78,36 @@ condition_statement:
       condition
     | condition_statement AND_OP condition {
         if ($1 != TYPE_INT || $3 != TYPE_INT) { /* Check for INTEGER operands */
-            printf("Erro semântico (linha %d): Operador '&&' requer operandos inteiros/booleanos.\n", yylineno);
+            printf("Erro semântico (linha %d): Operador '&&' requer operandos inteiros.\n", yylineno);
             semantic_set_error();
             $$ = TYPE_VOID;
         } else {
-            gen_op("AND");
             $$ = TYPE_INT; /* The result is an INTEGER */
         }
     }
     | condition_statement OR_OP condition {
         if ($1 != TYPE_INT || $3 != TYPE_INT) { /* Check for INTEGER operands */
-            printf("Erro semântico (linha %d): Operador '||' requer operandos inteiros/booleanos.\n", yylineno);
+            printf("Erro semântico (linha %d): Operador '||' requer operandos inteiros.\n", yylineno);
             semantic_set_error();
             $$ = TYPE_VOID;
         } else {
-            gen_op("OR");
             $$ = TYPE_INT;
         }
     }
 ;
 
 /* Add these new empty rules that act as triggers for codegen */
-M_start_loop: %empty { gen_loop_start(); } ;
-M_after_condition: %empty { gen_after_condition(); } ;
-M_end_loop: %empty { gen_loop_end(); } ;
+M_start_loop: %empty { } ;
+M_after_condition: %empty { } ;
+M_end_loop: %empty { } ;
 
 stmt:
     IDENTIFIER ASSGNOP expression ';' {
         if (semantic_check_var($1, yylineno)) {
             int idx = find_symbol($1);
-            gen_assign(symbol_table[idx].address);
         }
     }
   | WHILE M_start_loop condition_statement DO M_after_condition stmts END M_end_loop ';' { }
-  | IF condition_statement THEN stmts END ';' { gen_if(); } /* <-- ADD IF STATEMENT RULE */
 ;
 
 /* Expressoes aceitas */
@@ -127,7 +119,6 @@ expression:
             semantic_set_error();
             $$ = TYPE_VOID;
         } else {
-            gen_neg();
             $$ = TYPE_INT;
         }
     }
@@ -137,7 +128,6 @@ expression:
             semantic_set_error();
             $$ = TYPE_VOID;
         } else {
-            gen_op("ADD");
             $$ = TYPE_INT;
         }
     }
@@ -147,35 +137,13 @@ expression:
             semantic_set_error();
             $$ = TYPE_VOID;
         } else {
-            gen_op("SUB");
             $$ = TYPE_INT;
         }
     }
-  | expression '*' expression {
-        if ($1 != TYPE_INT || $3 != TYPE_INT) {
-            printf("Erro semântico (linha %d): Operação '*' requer inteiros.\n", yylineno);
-            semantic_set_error();
-            $$ = TYPE_VOID;
-        } else {
-            gen_op("MUL");
-            $$ = TYPE_INT;
-        }
-    }
-  | expression '/' expression {
-        if ($1 != TYPE_INT || $3 != TYPE_INT) {
-            printf("Erro semântico (linha %d): Operação '/' requer inteiros.\n", yylineno);
-            semantic_set_error();
-            $$ = TYPE_VOID;
-        } else {
-            gen_op("DIV");
-            $$ = TYPE_INT;
-        }
-    }
-  | NUM { gen_num($1); $$ = TYPE_INT; }
+  | NUM { $$ = TYPE_INT; }
   | IDENTIFIER {
         if (semantic_check_var($1, yylineno)) {
             int idx = find_symbol($1);
-            gen_id(symbol_table[idx].address);
             $$ = symbol_table[idx].type;
         } else {
             $$ = TYPE_VOID;
@@ -203,8 +171,7 @@ int main(int argc, char **argv)
     } else {
         yyin = stdin;
     }
-    
-    codegen_init("output.tm");
+
     semantic_init();
 
     if (yyparse() == 0 && result == 0 && !semantic_had_error()) 
@@ -214,8 +181,6 @@ int main(int argc, char **argv)
     {
         printf("\nErro sintatico ou semantico.\n");
     }
-
-    codegen_finalize();
 
     if (yyin != stdin) fclose(yyin);
     return result;
