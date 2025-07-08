@@ -25,17 +25,12 @@ whitespace [ \t]+
 "||"  { yylval.sval = strdup(yytext); return OR_OP; }
 "+"       { return '+'; }
 "-"       { return '-'; }
-"*"       { return '*'; }
-"/"       { return '/'; }
-"^"       { return '^'; }
 "("       { return '('; }
 ")"       { return ')'; }
-";"       { return ';'; } /* For statement termination */
+";"       { return ';'; }
 do        {return DO;}
 else      {return ELSE;}
 end       {return END;}
-fi        {return FI;}
-if        {return IF;}
 in        {return IN;}
 integer   {return INTEGER;}
 let       {return LET;}
@@ -45,12 +40,12 @@ then      {return THEN;}
 while     {return WHILE;}
 write     {return WRITE;}
 
-{number}     { yylval.ival = atoi(yytext); return NUM; } /* Good practice to use atoi */ 
+{number}     { yylval.ival = atoi(yytext); return NUM; }
 {id}         { yylval.sval = strdup(yytext); return IDENTIFIER; }
 {whitespace} { ; }
-\r            { ; } /* Ignore carriage returns */
+\r            { ; }
 \n           { yylineno++; }
-.            { fprintf(stderr, "Lexical Error (linha %d): Caractere inesperado '%s'\n", yylineno, yytext); }
+.            { fprintf(stderr, "Error na analise lexica (linha %d): Caractere inesperado '%s'\n", yylineno, yytext); }
 %%
 int yywrap() {
   return 1;
