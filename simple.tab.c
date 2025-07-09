@@ -74,6 +74,7 @@
 #include "tac.h"
 #include "Analisador-Lexico/symbol_table.h"
 #include <string.h>
+#include "codegen.h"
 
 int yylex();
 void yyerror(const char *s);
@@ -102,7 +103,7 @@ TacOpCode relop_to_tac(const char* op) {
     return -1;
 }
 
-#line 106 "simple.tab.c"
+#line 107 "simple.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -556,9 +557,9 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    62,    62,    68,    69,    73,    78,    79,    83,    84,
-      85,    86,    90,   103,   106,   114,   120,   120,   144,   145,
-     156,   167,   172
+       0,    63,    63,    69,    70,    74,    79,    80,    84,    85,
+      86,    87,    91,   104,   107,   115,   121,   121,   145,   146,
+     157,   168,   173
 };
 #endif
 
@@ -1140,48 +1141,48 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program: decls stmts  */
-#line 62 "simple.y"
+#line 63 "simple.y"
                     { 
 		semantic_print_table();
 		tac_print();
 	}
-#line 1149 "simple.tab.c"
+#line 1150 "simple.tab.c"
     break;
 
   case 5: /* decl: INTEGER IDENTIFIER ';'  */
-#line 73 "simple.y"
+#line 74 "simple.y"
                            { 
         semantic_declare_var((yyvsp[-1].sval), yylineno);
     }
-#line 1157 "simple.tab.c"
+#line 1158 "simple.tab.c"
     break;
 
   case 8: /* relop: LT  */
-#line 83 "simple.y"
+#line 84 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1163 "simple.tab.c"
+#line 1164 "simple.tab.c"
     break;
 
   case 9: /* relop: GT  */
-#line 84 "simple.y"
+#line 85 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1169 "simple.tab.c"
+#line 1170 "simple.tab.c"
     break;
 
   case 10: /* relop: EQ  */
-#line 85 "simple.y"
+#line 86 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1175 "simple.tab.c"
+#line 1176 "simple.tab.c"
     break;
 
   case 11: /* relop: NEQ  */
-#line 86 "simple.y"
+#line 87 "simple.y"
            { (yyval.sval) = (yyvsp[0].sval); }
-#line 1181 "simple.tab.c"
+#line 1182 "simple.tab.c"
     break;
 
   case 12: /* condition: expression relop expression  */
-#line 90 "simple.y"
+#line 91 "simple.y"
                                 {
 	if (semantic_get_type((yyvsp[-2].sval)) != TYPE_INT || semantic_get_type((yyvsp[0].sval)) != TYPE_INT) {
              printf("Erro semântico (linha %d): Operadores de condição requerem inteiros.\n", yylineno);
@@ -1192,39 +1193,39 @@ yyreduce:
 	}
 	free((yyvsp[-2].sval)); free((yyvsp[-1].sval)); free((yyvsp[0].sval));
     }
-#line 1196 "simple.tab.c"
+#line 1197 "simple.tab.c"
     break;
 
   case 13: /* condition_statement: condition  */
-#line 103 "simple.y"
+#line 104 "simple.y"
                 { (yyval.sval) = (yyvsp[0].sval); }
-#line 1202 "simple.tab.c"
+#line 1203 "simple.tab.c"
     break;
 
   case 14: /* M_start_loop: %empty  */
-#line 106 "simple.y"
+#line 107 "simple.y"
                      { 
     char* start_label = tac_new_label();
     tac_create(TAC_OP_LABEL, start_label, NULL, NULL);
     tac_push_label(start_label);
     free(start_label);
 }
-#line 1213 "simple.tab.c"
+#line 1214 "simple.tab.c"
     break;
 
   case 15: /* stmt: IDENTIFIER ASSGNOP expression ';'  */
-#line 114 "simple.y"
+#line 115 "simple.y"
                                       {
         if (semantic_check_var((yyvsp[-3].sval), yylineno)) {
             tac_create(TAC_OP_ASSIGN, (yyvsp[-3].sval), (yyvsp[-1].sval), NULL);
         }
         free((yyvsp[-3].sval)); free((yyvsp[-1].sval));
     }
-#line 1224 "simple.tab.c"
+#line 1225 "simple.tab.c"
     break;
 
   case 16: /* $@1: %empty  */
-#line 120 "simple.y"
+#line 121 "simple.y"
                                               {
         char* end_label = tac_new_label();
 
@@ -1235,11 +1236,11 @@ yyreduce:
         free((yyvsp[-1].sval));
         free(end_label);
       }
-#line 1239 "simple.tab.c"
+#line 1240 "simple.tab.c"
     break;
 
   case 17: /* stmt: WHILE M_start_loop condition_statement DO $@1 stmts END ';'  */
-#line 130 "simple.y"
+#line 131 "simple.y"
                     {
         char* end_label = tac_pop_label();
         char* start_label = tac_pop_label();
@@ -1250,17 +1251,17 @@ yyreduce:
         free(start_label);
         free(end_label);
     }
-#line 1254 "simple.tab.c"
+#line 1255 "simple.tab.c"
     break;
 
   case 18: /* expression: '(' expression ')'  */
-#line 144 "simple.y"
+#line 145 "simple.y"
                        { (yyval.sval) = (yyvsp[-1].sval); }
-#line 1260 "simple.tab.c"
+#line 1261 "simple.tab.c"
     break;
 
   case 19: /* expression: expression '+' expression  */
-#line 145 "simple.y"
+#line 146 "simple.y"
                               {
 	if (semantic_get_type((yyvsp[-2].sval)) != TYPE_INT || semantic_get_type((yyvsp[0].sval)) != TYPE_INT) {
             printf("Erro semântico (linha %d): Operação '+' requer inteiros.\n", yylineno);
@@ -1272,11 +1273,11 @@ yyreduce:
         }
 	free((yyvsp[-2].sval)); free((yyvsp[0].sval));
     }
-#line 1276 "simple.tab.c"
+#line 1277 "simple.tab.c"
     break;
 
   case 20: /* expression: expression '-' expression  */
-#line 156 "simple.y"
+#line 157 "simple.y"
                               {
 	if (semantic_get_type((yyvsp[-2].sval)) != TYPE_INT || semantic_get_type((yyvsp[0].sval)) != TYPE_INT) {
             printf("Erro semântico (linha %d): Operação '-' requer inteiros.\n", yylineno);
@@ -1288,21 +1289,21 @@ yyreduce:
         }
         free((yyvsp[-2].sval)); free((yyvsp[0].sval));
     }
-#line 1292 "simple.tab.c"
+#line 1293 "simple.tab.c"
     break;
 
   case 21: /* expression: NUM  */
-#line 167 "simple.y"
+#line 168 "simple.y"
         { 
 	char buffer[32];
         sprintf(buffer, "%d", (yyvsp[0].ival));
         (yyval.sval) = strdup(buffer);
     }
-#line 1302 "simple.tab.c"
+#line 1303 "simple.tab.c"
     break;
 
   case 22: /* expression: IDENTIFIER  */
-#line 172 "simple.y"
+#line 173 "simple.y"
                {
         if (semantic_check_var((yyvsp[0].sval), yylineno)) {
             (yyval.sval) = (yyvsp[0].sval);
@@ -1310,11 +1311,11 @@ yyreduce:
             (yyval.sval) = NULL;
         }
     }
-#line 1314 "simple.tab.c"
+#line 1315 "simple.tab.c"
     break;
 
 
-#line 1318 "simple.tab.c"
+#line 1319 "simple.tab.c"
 
       default: break;
     }
@@ -1507,7 +1508,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 181 "simple.y"
+#line 182 "simple.y"
 
 
 
@@ -1536,6 +1537,7 @@ int main(int argc, char **argv)
     if (yyparse() == 0 && result == 0 && !semantic_had_error()) 
     {
         printf("\nSintatico e semantico OK\n");
+	tm_generate_code("output.tm");
     } else 
     {
         printf("\nErro sintatico ou semantico.\n");

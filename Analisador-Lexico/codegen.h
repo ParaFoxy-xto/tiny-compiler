@@ -1,19 +1,8 @@
-#ifndef CODEGEN_H
-#define CODEGEN_H
+#ifndef TM_CODEGEN_H
+#define TM_CODEGEN_H
 
-void codegen_init(const char* output_filename);
+#include "tac.h"
 
-void codegen_finalize();
+int tm_generate_code(const char* output_filename);
 
-void gen_loop_start();
-void gen_after_condition();
-void gen_loop_end();
-void gen_if();
-void gen_assign(int address);
-void gen_neg();
-void gen_op(const char* op);
-void gen_num(int value);
-void gen_id(int address);
-void gen_relop(const char* op);
-
-#endif 
+#endif // TM_CODEGEN_H

@@ -1,149 +1,235 @@
-#include "codegen.h"
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include "codegen.h"
+#include "tac.h"
 
-// TM Machine register's
-#define AC 0 // Accumulator
-#define AC1 1 // Second accumulator
-#define GP 5  // Global Pointer (base for variables)
-#define FP 6  // Frame Pointer (not used)
-#define PC 7  // Program Counter
-#define MAX_LOC_STACK 10
+#define PC 7
+#define AC 0
+#define AC1 1
 
-static FILE* code;
-static int emitLoc = 0;
-static int highEmitLoc = 0;
+typedef struct VarMapping {
+    char* name;
+    int mem_loc;
+    struct VarMapping* next;
+} VarMapping;
 
-static int loc_stack[MAX_LOC_STACK];
-static int top = -1;
+typedef struct BackpatchNode {
+    long file_pos_to_patch; 
+    int jump_instr_loc;      
+    struct BackpatchNode* next;
+} BackpatchNode;
 
-void push_loc(int loc) {
-	if (top >= MAX_LOC_STACK - 1) {
-		printf("codegen: push_loc: Location stack overflow\n");
-		exit(1);
-	}
-	loc_stack[++top] = loc;
-}
+typedef struct LabelMapping {
+    char* name;
+    int is_defined;          
+    int instr_loc;           
+    BackpatchNode* patch_list_head; 
+    struct LabelMapping* next;
+} LabelMapping;
 
-int pop_loc(){
-	if (top < 0) {
-		printf("codegen: pop_loc: Location stack underflow\n");
-		exit(1);
-	}
-	return loc_stack[top--];
-}
+static VarMapping* var_map_head = NULL;
+static LabelMapping* label_map_head = NULL;
 
-void emitComment(const char* c) {
-    if (c) fprintf(code, "* %s\n", c);
-}
-
-void emitRO(const char* op, int r, int s, int t, const char* c) {
-    fprintf(code, "%3d: %5s %d,%d,%d\t%s\n", emitLoc++, op, r, s, t, c);
-    if (highEmitLoc < emitLoc) highEmitLoc = emitLoc;
-}
-
-void emitRM(const char* op, int r, int d, int s, const char* c) {
-    fprintf(code, "%3d: %5s %d,%d(%d)\t%s\n", emitLoc++, op, r, d, s, c);
-    if (highEmitLoc < emitLoc) highEmitLoc = emitLoc;
-}
-
-int emitSkip(int howMany) {
-    int i = emitLoc;
-    emitLoc += howMany;
-    if (highEmitLoc < emitLoc) highEmitLoc = emitLoc;
-    return i;
-}
-
-void emitBackup(int loc) {
-    emitLoc = loc;
-}
-
-void emitRestore() {
-    emitLoc = highEmitLoc;
-}
-
-void codegen_init(const char* output_filename) {
-    code = fopen(output_filename, "w");
-    if (code == NULL) {
-        printf("Unable to open file %s\n", output_filename);
-        exit(1);
+static int is_numeric(const char* s) {
+    if (s == NULL || *s == '\0') {
+        return 0;
     }
-    emitComment("TINY Compilation to TM Code");
-    emitComment("Standard prelude:");
-    emitRM("LD", GP, 0, 0, "Load global pointer");
-    emitRM("LDA", FP, 0, GP, "Copy GP to FP");
-    emitRM("ST", AC, 0, AC, "Clear location 0");
-    // Jump to main program, skipping prelude
-    int savedLoc = emitSkip(1);
-    // ... (code for functions would go here) ...
-    emitBackup(savedLoc);
-    emitRM("LDC", PC, highEmitLoc, 0, "Jump to end of prelude");
-    emitRestore();
-    emitComment("End of standard prelude.");
+    char* end;
+    strtol(s, &end, 10);
+    return *end == '\0';
 }
 
-void codegen_finalize() {
-    emitRO("HALT", 0, 0, 0, "End of program");
-    fclose(code);
+static int get_var_loc(const char* name, int* data_mem_offset) {
+    VarMapping* current = var_map_head;
+    while (current != NULL) {
+        if (strcmp(current->name, name) == 0) {
+            return current->mem_loc;
+        }
+        current = current->next;
+    }
+    VarMapping* new_var = (VarMapping*)malloc(sizeof(VarMapping));
+    new_var->name = strdup(name);
+    new_var->mem_loc = (*data_mem_offset)++;
+    new_var->next = var_map_head;
+    var_map_head = new_var;
+    return new_var->mem_loc;
 }
 
-void gen_loop_start() {
-    push_loc(emitLoc); // Push address of loop start
-    emitComment("WHILE: loop start");
+static LabelMapping* get_or_create_label_map(const char* name) {
+    LabelMapping* current = label_map_head;
+    while (current != NULL) {
+        if (strcmp(current->name, name) == 0) {
+            return current;
+        }
+        current = current->next;
+    }
+    LabelMapping* new_label = (LabelMapping*)malloc(sizeof(LabelMapping));
+    new_label->name = strdup(name);
+    new_label->is_defined = 0;
+    new_label->instr_loc = -1;
+    new_label->patch_list_head = NULL;
+    new_label->next = label_map_head;
+    label_map_head = new_label;
+    return new_label;
 }
 
-void gen_after_condition() {
-    // The condition result is in AC. Jump if false (0).
-    // We don't know where to jump yet, so we skip a location.
-    emitComment("WHILE: test condition");
-    int savedLoc = emitSkip(1);
-    push_loc(savedLoc); // Push address of the JEQ for backpatching
+static void free_mappings() {
+    VarMapping* current_var = var_map_head;
+    while(current_var) {
+        VarMapping* to_free = current_var;
+        current_var = current_var->next;
+        free(to_free->name);
+        free(to_free);
+    }
+    var_map_head = NULL;
+
+    LabelMapping* current_label = label_map_head;
+    while(current_label) {
+        LabelMapping* to_free_label = current_label;
+        current_label = current_label->next;
+
+        BackpatchNode* current_patch = to_free_label->patch_list_head;
+        while(current_patch) {
+            BackpatchNode* to_free_patch = current_patch;
+            current_patch = current_patch->next;
+            free(to_free_patch);
+        }
+        free(to_free_label->name);
+        free(to_free_label);
+    }
+    label_map_head = NULL;
 }
 
-void gen_loop_end() {
-    emitComment("WHILE: end of loop body");
-    int jmp_loc = pop_loc();   // Get the JEQ location
-    int loop_start = pop_loc(); // Get the loop start location
-    // Unconditional jump back to the start of the loop
-    emitRM("LDC", PC, loop_start, 0, "Jump back to loop start");
-    // Now backpatch the conditional jump
-    int current_loc = emitLoc;
-    emitBackup(jmp_loc);
-    emitRM("JEQ", AC, current_loc, 0, "Jump out of loop if condition is false");
-    emitRestore();
-    emitComment("WHILE: end of loop");
-}
-
-void gen_assign(int address) {
-    emitComment("ASSIGN: storing value");
-    emitRM("ST", AC, address, GP, "Store result to variable");
-}
-
-void gen_id(int address) {
-    emitComment("LOAD: loading variable");
-    emitRM("LD", AC, address, GP, "Load variable value into AC");
-}
-
-void gen_num(int value) {
-    emitComment("LOAD: loading constant");
-    emitRM("LDC", AC, value, 0, "Load constant value into AC");
-}
-
-void gen_op(const char* op) {
-    emitComment("OP: combining values");
-    emitRM("ST", AC, 0, GP, "Store left operand"); // Temporarily store left operand
-    emitRM("LD", AC1, 0, GP, "Load left operand into AC1");
-    if (strcmp(op, "ADD") == 0) {
-        emitRO("ADD", AC, AC1, AC, "Op +");
-    } else if (strcmp(op, "SUB") == 0) {
-        emitRO("SUB", AC, AC1, AC, "Op -");
+static void tm_load_operand(FILE* out_file, int reg, const char* operand, int* instruction_loc, int* data_loc) {
+    if (is_numeric(operand)) {
+        fprintf(out_file, "%3d:  LDC %d,%s(0)\n", (*instruction_loc)++, reg, operand);
+    } else {
+        int mem_loc = get_var_loc(operand, data_loc);
+        fprintf(out_file, "%3d:  LD  %d,%d(5)\n", (*instruction_loc)++, reg, mem_loc);
     }
 }
 
-void gen_relop(const char* op) {
-    emitComment("RELOP: comparing values");
-    emitRM("ST", AC, 0, GP, "Store left operand");
-    emitRM("LD", AC1, 0, GP, "Load left operand into AC1");
-    emitRO("SUB", AC, AC1, AC, "Compare by subtraction (L-R)");
+int tm_generate_code(const char* output_filename) {
+    FILE* out_file = fopen(output_filename, "w");
+    if (!out_file) {
+        perror("Failed to open output file for TM code");
+        return -1;
+    }
+	
+    // --- Standard Prelude ---
+    fprintf(out_file, "* Tiny Machine Code Generated on %s\n", __DATE__);
+    fprintf(out_file, "* Standard prelude\n");
+    fprintf(out_file, "  0:  LD 6,0(0)\t* Load constant 0\n");
+    fprintf(out_file, "  1:  ST %d,0(0)\t* Clear location 0 in data memory\n", AC);
+    fprintf(out_file, "* End of standard prelude\n");
+
+    int instruction_loc = 2;
+    int data_loc = 0;
+    Tac* current_tac = tac_list_head;
+    
+    fprintf(out_file, "* Tiny Machine Code Generated on %s (Single Pass with LDC)\n", __DATE__);
+
+    while (current_tac != NULL) {
+        int loc_res;
+        LabelMapping* label_map;
+        switch (current_tac->op) {
+            case TAC_OP_ASSIGN:
+                tm_load_operand(out_file, AC, current_tac->arg1, &instruction_loc, &data_loc);
+                loc_res = get_var_loc(current_tac->res, &data_loc);
+                fprintf(out_file, "%3d:  ST  %d,%d(5)\n", instruction_loc++, AC, loc_res);
+                break;
+            case TAC_OP_ADD:
+            case TAC_OP_SUB:
+                tm_load_operand(out_file, AC, current_tac->arg1, &instruction_loc, &data_loc);
+                tm_load_operand(out_file, AC1, current_tac->arg2, &instruction_loc, &data_loc);
+                const char* op_str = (current_tac->op == TAC_OP_ADD) ? "ADD" : "SUB";
+                fprintf(out_file, "%3d:  %s  %d,%d,%d\n", instruction_loc++, op_str, AC, AC, AC1);
+                loc_res = get_var_loc(current_tac->res, &data_loc);
+                fprintf(out_file, "%3d:  ST  %d,%d(5)\n", instruction_loc++, AC, loc_res);
+                break;
+            case TAC_OP_LT:
+            case TAC_OP_GT:
+            case TAC_OP_EQ:
+            case TAC_OP_NEQ:
+                tm_load_operand(out_file, AC, current_tac->arg1, &instruction_loc, &data_loc);
+                tm_load_operand(out_file, AC1, current_tac->arg2, &instruction_loc, &data_loc);
+                fprintf(out_file, "%3d:  SUB %d,%d,%d\n", instruction_loc++, AC, AC, AC1);
+
+                const char* jmp_op_rel;
+                switch(current_tac->op) {
+                    case TAC_OP_LT:  jmp_op_rel = "JLT"; break;
+                    case TAC_OP_GT:  jmp_op_rel = "JGT"; break;
+                    case TAC_OP_EQ:  jmp_op_rel = "JEQ"; break;
+                    case TAC_OP_NEQ: jmp_op_rel = "JNE"; break;
+                    default:         jmp_op_rel = "JMP";
+                }
+
+                fprintf(out_file, "%3d:  %s %d,%d(%d)\n", instruction_loc++, jmp_op_rel, AC, 2, PC);
+                fprintf(out_file, "%3d:  LDC %d,0(0)\n", instruction_loc++, AC);
+                fprintf(out_file, "%3d:  LDA %d,%d(%d)\n", instruction_loc++, PC, 1, PC);
+                fprintf(out_file, "%3d:  LDC %d,1(0)\n", instruction_loc++, AC);
+
+                loc_res = get_var_loc(current_tac->res, &data_loc);
+                fprintf(out_file, "%3d:  ST  %d,%d(5)\n", instruction_loc++, AC, loc_res);
+                break;
+            case TAC_OP_LABEL:
+                label_map = get_or_create_label_map(current_tac->res);
+                if (label_map->is_defined) {
+                    fprintf(stderr, "CodeGen Error: Duplicate label definition '%s'\n", label_map->name);
+                } else {
+                    label_map->is_defined = 1;
+                    label_map->instr_loc = instruction_loc;
+                    long current_file_pos = ftell(out_file);
+                    BackpatchNode* patch = label_map->patch_list_head;
+                    while (patch) {
+                        fseek(out_file, patch->file_pos_to_patch, SEEK_SET);
+                        fprintf(out_file, "%d", label_map->instr_loc - (patch->jump_instr_loc + 1));
+                        patch = patch->next;
+                    }
+                    fseek(out_file, current_file_pos, SEEK_SET);
+                }
+                break;
+            case TAC_OP_GOTO:
+            case TAC_OP_IF_FALSE:
+                if (current_tac->op == TAC_OP_IF_FALSE) {
+                    tm_load_operand(out_file, AC, current_tac->arg1, &instruction_loc, &data_loc);
+                }
+                label_map = get_or_create_label_map(current_tac->res);
+                const char* jmp_op = (current_tac->op == TAC_OP_GOTO) ? "LDA" : "JEQ";
+                int reg = (current_tac->op == TAC_OP_GOTO) ? PC : AC;
+
+                if (label_map->is_defined) {
+                    int offset = label_map->instr_loc - (instruction_loc + 1);
+                    fprintf(out_file, "%3d:  %s  %d,%d(%d)\n", instruction_loc++, jmp_op, reg, offset, PC);
+                } else {
+                    fprintf(out_file, "%3d:  %s  %d,", instruction_loc, jmp_op, reg);
+                    long patch_pos = ftell(out_file);
+                    fprintf(out_file, "%s", " "); // Placeholder
+                    fprintf(out_file, "(%d)\n", PC);
+
+                    BackpatchNode* new_patch = (BackpatchNode*)malloc(sizeof(BackpatchNode));
+                    new_patch->file_pos_to_patch = patch_pos;
+                    new_patch->jump_instr_loc = instruction_loc;
+                    new_patch->next = label_map->patch_list_head;
+                    label_map->patch_list_head = new_patch;
+                    instruction_loc++;
+                }
+                break;
+
+            default:
+                fprintf(stderr, "CodeGen Error: Unknown TAC opcode %d\n", current_tac->op);
+                break;
+        }
+        current_tac = current_tac->next;
+    }
+
+    fprintf(out_file, "* End of program\n");
+    fprintf(out_file, "%3d: HALT 0,0,0\n", instruction_loc);
+
+    fclose(out_file);
+    free_mappings();
+    printf("TM code successfully generated in %s (single pass with LDC)\n", output_filename);
+    return 0;
 }

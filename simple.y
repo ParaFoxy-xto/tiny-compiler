@@ -6,6 +6,7 @@
 #include "tac.h"
 #include "Analisador-Lexico/symbol_table.h"
 #include <string.h>
+#include "codegen.h"
 
 int yylex();
 void yyerror(const char *s);
@@ -206,6 +207,7 @@ int main(int argc, char **argv)
     if (yyparse() == 0 && result == 0 && !semantic_had_error()) 
     {
         printf("\nSintatico e semantico OK\n");
+	tm_generate_code("output.tm");
     } else 
     {
         printf("\nErro sintatico ou semantico.\n");

@@ -81,7 +81,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 38 "simple.y"
+#line 39 "simple.y"
 
     int ival;      // Para NUM
     char* sval;    // Para IDENTIFIER
