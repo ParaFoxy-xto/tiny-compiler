@@ -499,7 +499,7 @@ int doCommand (void)
       { dloc = num ;
         if ( getNum ()) printcnt = num ;
       }
-      if ( ! atEOL ())
+      if ( atEOL ())
         printf("Data locations?\n");
       else
       { while ((dloc >= 0) && (dloc < DADDR_SIZE)
