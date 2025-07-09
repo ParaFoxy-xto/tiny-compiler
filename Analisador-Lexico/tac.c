@@ -42,7 +42,7 @@ static char* safe_strdup(const char* s) {
     }
     char* new_str = malloc(strlen(s) + 1);
     if (new_str == NULL) {
-        fprintf(stderr, "Error: malloc failed in safe_strdup\n");
+        fprintf(stderr, "Error: malloc falhou na duplicacao de string\n");
         exit(EXIT_FAILURE);
     }
     strcpy(new_str, s);
@@ -52,7 +52,7 @@ static char* safe_strdup(const char* s) {
 Tac* tac_create(TacOpCode op, const char* res, const char* arg1, const char* arg2) {
     Tac* new_tac = (Tac*)malloc(sizeof(Tac));
     if (new_tac == NULL) {
-        fprintf(stderr, "Error: malloc failed for new TAC instruction\n");
+        fprintf(stderr, "Error: malloc criacao de operacao TAC\n");
         exit(EXIT_FAILURE);
     }
 
@@ -91,7 +91,7 @@ void tac_print() {
     printf("\n--- Three-Address Code ---\n");
     Tac* current = tac_list_head;
     if (current == NULL) {
-        printf("No TAC generated.\n");
+        printf("Geracao TAC falhou ?.\n");
         return;
     }
 
@@ -127,17 +127,14 @@ void tac_print() {
             case TAC_OP_IF_FALSE:
                 printf("if_false %s goto %s\n", current->arg1, current->res);
                 break;
-            // Add other cases as you expand the language
             default:
-                fprintf(stderr, "Unknown TAC opcode: %d\n", current->op);
+                fprintf(stderr, "TAC opcode desconhecido: %d\n", current->op);
         }
         current = current->next;
     }
      printf("--------------------------\n");
 }
 
-
-// --- Label Stack Implementation ---
 
 void tac_push_label(const char* label) {
     if (label_stack_top >= MAX_LABEL_STACK - 1) {

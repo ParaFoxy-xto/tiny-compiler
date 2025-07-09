@@ -32,7 +32,7 @@ typedef struct LabelMapping {
 static VarMapping* var_map_head = NULL;
 static LabelMapping* label_map_head = NULL;
 
-static int is_numeric(const char* s) {
+static int is_constante(const char* s) {
     if (s == NULL || *s == '\0') {
         return 0;
     }
@@ -41,7 +41,7 @@ static int is_numeric(const char* s) {
     return *end == '\0';
 }
 
-static int get_var_loc(const char* name, int* data_mem_offset) {
+static int get_or_create_var(const char* name, int* data_mem_offset) {
     VarMapping* current = var_map_head;
     while (current != NULL) {
         if (strcmp(current->name, name) == 0) {
@@ -103,10 +103,10 @@ static void free_mappings() {
 }
 
 static void tm_load_operand(FILE* out_file, int reg, const char* operand, int* instruction_loc, int* data_loc) {
-    if (is_numeric(operand)) {
+    if (is_constante(operand)) {
         fprintf(out_file, "%3d:  LDC %d,%s(0)\n", (*instruction_loc)++, reg, operand);
     } else {
-        int mem_loc = get_var_loc(operand, data_loc);
+        int mem_loc = get_or_create_var(operand, data_loc);
         fprintf(out_file, "%3d:  LD  %d,%d(5)\n", (*instruction_loc)++, reg, mem_loc);
     }
 }
@@ -114,7 +114,7 @@ static void tm_load_operand(FILE* out_file, int reg, const char* operand, int* i
 int tm_generate_code(const char* output_filename) {
     FILE* out_file = fopen(output_filename, "w");
     if (!out_file) {
-        perror("Failed to open output file for TM code");
+        perror("Falha ao abrir arquivo.");
         return -1;
     }
 	
@@ -128,8 +128,6 @@ int tm_generate_code(const char* output_filename) {
     int instruction_loc = 2;
     int data_loc = 0;
     Tac* current_tac = tac_list_head;
-    
-    fprintf(out_file, "* Tiny Machine Code Generated on %s (Single Pass with LDC)\n", __DATE__);
 
     while (current_tac != NULL) {
         int loc_res;
@@ -137,7 +135,7 @@ int tm_generate_code(const char* output_filename) {
         switch (current_tac->op) {
             case TAC_OP_ASSIGN:
                 tm_load_operand(out_file, AC, current_tac->arg1, &instruction_loc, &data_loc);
-                loc_res = get_var_loc(current_tac->res, &data_loc);
+                loc_res = get_or_create_var(current_tac->res, &data_loc);
                 fprintf(out_file, "%3d:  ST  %d,%d(5)\n", instruction_loc++, AC, loc_res);
                 break;
             case TAC_OP_ADD:
@@ -146,7 +144,7 @@ int tm_generate_code(const char* output_filename) {
                 tm_load_operand(out_file, AC1, current_tac->arg2, &instruction_loc, &data_loc);
                 const char* op_str = (current_tac->op == TAC_OP_ADD) ? "ADD" : "SUB";
                 fprintf(out_file, "%3d:  %s  %d,%d,%d\n", instruction_loc++, op_str, AC, AC, AC1);
-                loc_res = get_var_loc(current_tac->res, &data_loc);
+                loc_res = get_or_create_var(current_tac->res, &data_loc);
                 fprintf(out_file, "%3d:  ST  %d,%d(5)\n", instruction_loc++, AC, loc_res);
                 break;
             case TAC_OP_LT:
@@ -171,7 +169,7 @@ int tm_generate_code(const char* output_filename) {
                 fprintf(out_file, "%3d:  LDA %d,%d(%d)\n", instruction_loc++, PC, 1, PC);
                 fprintf(out_file, "%3d:  LDC %d,1(0)\n", instruction_loc++, AC);
 
-                loc_res = get_var_loc(current_tac->res, &data_loc);
+                loc_res = get_or_create_var(current_tac->res, &data_loc);
                 fprintf(out_file, "%3d:  ST  %d,%d(5)\n", instruction_loc++, AC, loc_res);
                 break;
             case TAC_OP_LABEL:
@@ -185,7 +183,13 @@ int tm_generate_code(const char* output_filename) {
                     BackpatchNode* patch = label_map->patch_list_head;
                     while (patch) {
                         fseek(out_file, patch->file_pos_to_patch, SEEK_SET);
-                        fprintf(out_file, "%d", label_map->instr_loc - (patch->jump_instr_loc + 1));
+			int offset = label_map->instr_loc - (patch->jump_instr_loc + 1);
+
+		  	char patch_str[13];
+			snprintf(patch_str, sizeof(patch_str), "%d(%d)", offset, PC);
+    			fprintf(out_file, "%-12s", patch_str);
+
+			fflush(out_file);
                         patch = patch->next;
                     }
                     fseek(out_file, current_file_pos, SEEK_SET);
@@ -206,9 +210,9 @@ int tm_generate_code(const char* output_filename) {
                 } else {
                     fprintf(out_file, "%3d:  %s  %d,", instruction_loc, jmp_op, reg);
                     long patch_pos = ftell(out_file);
-                    fprintf(out_file, "%s", " "); // Placeholder
-                    fprintf(out_file, "(%d)\n", PC);
+		    fprintf(out_file, "%-12s\n", "(________)"); 
 
+		    // atualiza head daquela label. obs: aqui no while nao passar de um registro
                     BackpatchNode* new_patch = (BackpatchNode*)malloc(sizeof(BackpatchNode));
                     new_patch->file_pos_to_patch = patch_pos;
                     new_patch->jump_instr_loc = instruction_loc;
@@ -230,6 +234,6 @@ int tm_generate_code(const char* output_filename) {
 
     fclose(out_file);
     free_mappings();
-    printf("TM code successfully generated in %s (single pass with LDC)\n", output_filename);
+    printf("Codigo para TM gerado com sucesso. Saida: %s\n", output_filename);
     return 0;
 }
